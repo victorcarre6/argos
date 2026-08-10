@@ -64,8 +64,7 @@ The **Viz** tab initializes embeddings and clusters on demand. The assistant ret
 Argos exposes port `1207`. On the target host:
 
 ```bash
-git clone <your-repository> argos
+git clone git@github.com:victorcarre6/argos.git
 cd argos
 docker compose up -d --build
 ```
-
