@@ -1,0 +1,6 @@
+# Désactivé par défaut. Ne jamais écrire le token dans Git.
+enabled: false
+bot_token_env: "TELEGRAM_BOT_TOKEN"
+chat_id: ""
+score_threshold: 70
+max_messages: 5

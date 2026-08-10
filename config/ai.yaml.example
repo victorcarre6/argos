@@ -1,0 +1,10 @@
+# Services Ollama Nyx : réglages batch et clustering.
+embedding:
+  url:
+  model:
+  batch_size: 16
+  threshold: 0.45 
+assistant:
+  url:
+  model:
+  timeout_seconds:

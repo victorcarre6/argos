@@ -1,0 +1,11 @@
+data/*.db
+data/*.db-*
+web/node_modules/
+web/dist/
+__pycache__/
+.pytest_cache/
+CLAUDE.md
+AGENTS.md
+docs/
+IDEAS.md
+config/ai.yaml

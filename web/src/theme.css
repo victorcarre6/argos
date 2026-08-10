@@ -1,0 +1,42 @@
+/*
+ * Design tokens — semantic colors as oklch components (L C H), consumed by
+ * Tailwind via `oklch(var(--token) / <alpha-value>)` (see tailwind.config.ts).
+ * Light/dark switch automatically with the OS via prefers-color-scheme.
+ *
+ * To retheme the whole app, edit only the values below.
+ */
+:root {
+  color-scheme: light dark;
+
+  @media (prefers-color-scheme: light) {
+    --background: 1 0 0; /* white */
+    --foreground: 21% 0.034 264.665; /* gray 900 */
+    --muted: 98.5% 0.002 247.839; /* gray 50 */
+    --muted-foreground: 44.6% 0.03 256.802; /* gray 600 */
+    --secondary: 96.7% 0.003 264.542; /* gray 100 */
+    --secondary-foreground: 44.6% 0.03 256.802; /* gray 600 */
+    --accent: 96.7% 0.003 264.542; /* gray 100 */
+    --border: 92.8% 0.006 264.531; /* gray 200 */
+    --brand: 60.6% 0.25 292.717; /* violet 500 */
+    --brand-foreground: 1 0 0; /* white */
+    --success: 62.7% 0.17 149.2; /* green 600 */
+    --error: 63.7% 0.237 25.331; /* red 500 */
+    --warning: 68% 0.16 66; /* amber 600 */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    --background: 13% 0.028 261.692; /* gray 950 */
+    --foreground: 96.7% 0.003 264.542; /* gray 100 */
+    --muted: 21% 0.034 264.665; /* gray 900 */
+    --muted-foreground: 70.7% 0.022 261.325; /* gray 400 */
+    --secondary: 27.8% 0.033 256.848; /* gray 800 */
+    --secondary-foreground: 70.7% 0.022 261.325; /* gray 400 */
+    --accent: 27.8% 0.033 256.848; /* gray 800 */
+    --border: 30% 0.02 261; /* gray 750 */
+    --brand: 62% 0.22 292.7; /* violet 400/500 */
+    --brand-foreground: 1 0 0; /* white */
+    --success: 76.5% 0.177 163.2; /* emerald 400 */
+    --error: 70.4% 0.191 22.2; /* red 400 */
+    --warning: 82% 0.16 86; /* amber 400 */
+  }
+}

@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background: oklch(var(--background));
+  color: oklch(var(--foreground));
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+input,
+select {
+  color: oklch(var(--foreground));
+}

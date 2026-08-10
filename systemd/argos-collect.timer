@@ -1,0 +1,10 @@
+[Unit]
+Description=Schedule Argos RSS collection
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=argos-collect.service
+
+[Install]
+WantedBy=timers.target
