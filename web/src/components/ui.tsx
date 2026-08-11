@@ -1,5 +1,4 @@
 import cn from "classnames";
-import { ChevronDown } from "lucide-react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 /* --------------------------------------------------------------------------
@@ -72,7 +71,7 @@ export const Label = ({ children }: { children: ReactNode }) => (
 );
 
 /* --------------------------------------------------------------------------
- * Pill / Field
+ * Pill
  * ------------------------------------------------------------------------ */
 
 type Tone = "neutral" | "brand" | "success" | "error" | "warning";
@@ -102,37 +101,6 @@ export const Pill = ({
   </span>
 );
 
-/** `[pill label] ……… value` row — the canonical key/value line. */
-export const Field = ({
-  label,
-  value,
-}: {
-  label: ReactNode;
-  value: unknown;
-}) => (
-  <div className="flex items-center justify-between gap-3">
-    <Pill tone="brand">{label}</Pill>
-    <span
-      className="truncate font-mono text-sm text-foreground"
-      title={String(value)}
-    >
-      {String(value)}
-    </span>
-  </div>
-);
-
-/** Plain key/value line (no pill). */
-export const KV = ({ label, value }: { label: ReactNode; value: unknown }) => (
-  <div className="flex items-baseline justify-between gap-4 border-b border-border/50 py-1.5 last:border-0">
-    <span className="text-xs font-medium text-secondary-foreground">
-      {label}
-    </span>
-    <span className="truncate text-right text-sm text-foreground">
-      {String(value)}
-    </span>
-  </div>
-);
-
 /* --------------------------------------------------------------------------
  * Misc
  * ------------------------------------------------------------------------ */
@@ -142,33 +110,4 @@ export const Empty = ({ children }: { children: ReactNode }) => (
   <div className="rounded-lg border border-dashed border-border bg-muted px-4 py-8 text-center text-sm text-muted-foreground">
     {children}
   </div>
-);
-
-/** Collapsible section with an animated chevron. */
-export const Expander = ({
-  label,
-  open,
-  children,
-}: {
-  label: string;
-  open?: boolean;
-  children: ReactNode;
-}) => (
-  <details
-    open={open}
-    className="group my-1 overflow-hidden rounded-lg border border-border"
-  >
-    <summary className="flex cursor-pointer select-none items-center justify-between px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
-      <span>{label}</span>
-      <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
-    </summary>
-    <div className="border-t border-border px-3 py-2">{children}</div>
-  </details>
-);
-
-/** Monospaced preformatted block. */
-export const Code = ({ children }: { children: ReactNode }) => (
-  <pre className="overflow-auto rounded-lg bg-muted p-3 text-xs leading-relaxed text-foreground">
-    {children}
-  </pre>
 );

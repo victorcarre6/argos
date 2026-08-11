@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@radix-ui/react-tabs": "^1.1.21",
     "classnames": "^2.5.1",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",

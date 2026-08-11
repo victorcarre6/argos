@@ -1,6 +1,6 @@
 services:
   api:
-    build: ./api
+    build: ./backend
     container_name: argos-api
     environment:
       APP_ROOT: /app

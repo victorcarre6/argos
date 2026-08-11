@@ -1,144 +1,307 @@
-import { Activity, Bot, CalendarDays, CheckCircle2, CircleAlert, Database, ExternalLink, Eye, Play, Plus, RefreshCw, Rss, Save, Search, Settings2, Sparkles, TestTube2, Waves, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity,
+  Bot,
+  CalendarDays,
+  Database,
+  Rss,
+  Settings2,
+  Waves,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { Button, Card, Empty, Label, Pill, SectionTitle } from "./components/ui";
-
-type Tab = "watch" | "digest" | "health" | "viz" | "assistant" | "sources";
-type Source = { name: string; url: string; enabled?: boolean; max_items?: number };
-type Category = { name: string; color?: string; keywords?: string[]; sources: Source[] };
-type Config = { app?: { name?: string; description?: string }; categories: Category[] };
-type Article = { id: string; title: string; url: string; source: string; category: string; summary: string; published_at: string; collected_at: string; score: number; tags: string[] };
-type Stats = { total: number; sources: number; last_collection: string | null };
-type Collection = { running: boolean; started_at: string | null; finished_at: string | null; result: { sources: number; articles: number; new?: number; duplicates?: number; errors: string[] } | null; error: string | null };
-type SourceHealth = { source: string; category: string; url: string; last_attempt_at: string | null; last_success_at: string | null; latency_ms: number; http_status: number | null; last_error: string | null; last_item_count: number; total_successes: number; total_failures: number };
-type AppHealth = { uptime_seconds: number; database_bytes: number; articles: number; duplicates: number; sources_healthy: number; sources_failing: number; assistant: AssistantStatus };
-type AssistantStatus = { available: boolean; url: string; model: string; error: string | null };
-type Cluster = { id: string; name: string; auto_name: string; size: number; titles: string[] };
-type ClusterResponse = { clusters: Cluster[]; state: Collection };
-type HeatCell = { x: string; y: string; value: number };
+import { api, jsonRequest } from "./lib/api";
+import type {
+  AppHealth,
+  AssistantStatus,
+  AsyncState,
+  Config,
+  ClusterResponse,
+  HeatCell,
+  SourceHealth,
+  Stats,
+  Tab,
+  Article,
+} from "./types";
+import { AssistantView } from "./views/AssistantView";
+import { DigestView } from "./views/DigestView";
+import { HealthView } from "./views/HealthView";
+import { SourcesView } from "./views/SourcesView";
+import { VizView } from "./views/VizView";
+import { WatchView } from "./views/WatchView";
 
 const EMPTY_CONFIG: Config = { categories: [] };
-const NAV: { value: Tab; label: string; icon: typeof Rss }[] = [
-  { value: "watch", label: "Flux", icon: Rss }, { value: "digest", label: "Digest", icon: CalendarDays },
-  { value: "health", label: "Santé", icon: Activity }, { value: "viz", label: "Viz", icon: Waves },
-  { value: "assistant", label: "Assistant", icon: Bot }, { value: "sources", label: "Sources", icon: Settings2 },
+const EMPTY_ASYNC_STATE: AsyncState = {
+  running: false,
+  started_at: null,
+  finished_at: null,
+  result: null,
+  error: null,
+};
+
+const NAVIGATION: { value: Tab; label: string; icon: typeof Rss }[] = [
+  { value: "watch", label: "Flux", icon: Rss },
+  { value: "digest", label: "Digest", icon: CalendarDays },
+  { value: "health", label: "Santé", icon: Activity },
+  { value: "viz", label: "Viz", icon: Waves },
+  { value: "assistant", label: "Assistant", icon: Bot },
+  { value: "sources", label: "Sources", icon: Settings2 },
 ];
 
-const NETWORK_DEBUG = true; // NETWORK_DEBUG: supprimer ce bloc après résolution de l’incident.
-type NetworkTrace = { at: string; path: string; attempt: number; phase: "start" | "success" | "failure"; detail?: string };
-
-function traceNetwork(path: string, attempt: number, phase: NetworkTrace["phase"], detail?: string): void {
-  if (!NETWORK_DEBUG || typeof window === "undefined") return;
-  const entry: NetworkTrace = { at: new Date().toISOString(), path, attempt, phase, detail };
-  const debugWindow = window as Window & { __ARGOS_NETWORK_DEBUG__?: NetworkTrace[] };
-  const entries = debugWindow.__ARGOS_NETWORK_DEBUG__ ?? [];
-  entries.push(entry); debugWindow.__ARGOS_NETWORK_DEBUG__ = entries.slice(-100);
-  console.debug("[NETWORK_DEBUG]", entry);
-}
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = "/api" + path; const retryCount = (init?.method ?? "GET").toUpperCase() === "GET" ? 2 : 0; let lastError: unknown;
-  for (let attempt = 0; attempt <= retryCount; attempt += 1) {
-    traceNetwork(url, attempt + 1, "start");
-    try {
-      const response = await fetch(url, init);
-      if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? "HTTP " + response.status);
-      const body = await response.json() as T; traceNetwork(url, attempt + 1, "success", String(response.status)); return body;
-    } catch (error) {
-      lastError = error; traceNetwork(url, attempt + 1, "failure", error instanceof Error ? error.message : String(error));
-      if (attempt < retryCount) await new Promise((resolve) => window.setTimeout(resolve, 150 * (attempt + 1)));
-    }
+async function loadResource<T>(
+  path: string,
+  apply: (value: T) => void,
+): Promise<string | null> {
+  try {
+    apply(await api<T>(path));
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `${path} : ${message}`;
   }
-  const message = lastError instanceof Error ? lastError.message : String(lastError);
-  throw new Error("API indisponible : " + url + " (après " + String(retryCount + 1) + " tentative(s)) — " + message);
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-function formatBytes(bytes: number): string { return `${(bytes / 1024 / 1024).toFixed(bytes > 10_000_000 ? 1 : 2)} Mo`; }
-function matchesQuery(article: Article, query: string): boolean {
-  const text = `${article.title} ${article.summary} ${article.tags.join(" ")}`.toLowerCase();
-  return query.toLowerCase().split(/\s+(?:ou|or)\s+/).filter(Boolean).some((group) => group.split(/\s+(?:et|and)\s+/).filter(Boolean).every((term) => text.includes(term.trim())));
-}
-function ArticleCard({ article, compact, onRead }: { article: Article; compact: boolean; onRead: (article: Article) => void }) {
-  return <Card className={compact ? "p-3" : "p-4"}><div className="flex gap-3"><div className="min-w-0 flex-1"><div className="mb-2 flex flex-wrap gap-2"><Pill tone={article.score >= 55 ? "brand" : "neutral"}>{article.category}</Pill>{article.tags.slice(0, compact ? 1 : 3).map((tag) => <Pill key={tag} tone="success">{tag}</Pill>)}</div><button onClick={() => onRead(article)} className="text-left font-semibold hover:text-brand">{article.title}</button>{!compact && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{article.summary || "Aucun résumé fourni par le flux."}</p>}<div className="mt-3 flex items-center gap-2 text-xs text-secondary-foreground"><span>{article.source} · {formatDate(article.published_at || article.collected_at)}</span><a href={article.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-brand">Source <ExternalLink className="size-3" /></a></div></div><div className="font-mono text-lg font-semibold text-brand">{article.score}</div></div></Card>;
-}
-function Reader({ article, close }: { article: Article; close: () => void }) {
-  return <div className="fixed inset-0 z-40 bg-foreground/20 p-4 backdrop-blur-sm" role="dialog" aria-modal="true"><div className="mx-auto mt-8 max-w-3xl rounded-xl border border-border bg-background p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><Pill tone="brand">{article.category}</Pill><h2 className="mt-3 text-xl font-semibold">{article.title}</h2></div><Button variant="ghost" onClick={close} aria-label="Fermer"><X className="size-4" /></Button></div><p className="mt-5 whitespace-pre-line text-sm leading-6 text-muted-foreground">{article.summary || "Le flux ne fournit pas de résumé."}</p><div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm"><span>{article.source} · {formatDate(article.published_at || article.collected_at)}</span><a className="inline-flex items-center gap-1 text-brand" href={article.url} target="_blank" rel="noreferrer">Ouvrir l'article <ExternalLink className="size-4" /></a></div></div></div>;
-}
-function Watch({ config, stats, articles, collection, onCollect }: { config: Config; stats: Stats; articles: Article[]; collection: Collection; onCollect: () => void }) {
-  const [category, setCategory] = useState(""); const [search, setSearch] = useState(""); const [compact, setCompact] = useState(false); const [reader, setReader] = useState<Article | null>(null);
-  const shown = useMemo(() => articles.filter((article) => (!category || article.category === category) && (!search || matchesQuery(article, search))), [articles, category, search]);
-  return <div className="space-y-5"><section className="grid gap-3 sm:grid-cols-3"><Card className="p-4"><Label>Articles indexés</Label><div className="text-2xl font-semibold">{stats.total}</div></Card><Card className="p-4"><Label>Sources actives</Label><div className="text-2xl font-semibold">{stats.sources || config.categories.flatMap((item) => item.sources).filter((item) => item.enabled !== false).length}</div></Card><Card className="p-4"><Label>Dernière collecte</Label><div className="pt-1 text-sm font-medium">{formatDate(stats.last_collection)}</div></Card></section>
-    {collection.result && <div className="rounded-lg border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">Collecte terminée : {collection.result.new ?? collection.result.articles} nouveaux articles, {collection.result.duplicates ?? 0} regroupements de syndication.</div>}{collection.error && <div className="rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">Erreur de collecte : {collection.error}</div>}
-    <Card className="p-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"><div><SectionTitle>Derniers signaux</SectionTitle><p className="text-sm text-muted-foreground">Recherche : séparer les alternatives par « ou », les termes requis par « et ».</p></div><div className="flex gap-2"><Button variant="secondary" onClick={() => setCompact(!compact)} iconStart={<Eye className="size-4" />}>{compact ? "Confort" : "Compact"}</Button><Button onClick={onCollect} disabled={collection.running} iconStart={collection.running ? <RefreshCw className="size-4 animate-spin" /> : <Play className="size-4" />}>{collection.running ? "Collecte…" : "Collecter"}</Button></div></div><div className="mt-4 flex flex-col gap-2 sm:flex-row"><select value={category} onChange={(event) => setCategory(event.target.value)} className="h-9 rounded-md border border-border bg-background px-3 text-sm"><option value="">Toutes les catégories</option>{config.categories.map((item) => <option key={item.name}>{item.name}</option>)}</select><div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-muted-foreground" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ex. agent et MCP, ou RAG" className="h-9 w-full rounded-md border border-border bg-background py-1 pl-9 pr-3 text-sm" /></div></div></Card>
-    {shown.length ? <div className="space-y-3">{shown.map((article) => <ArticleCard key={article.id} article={article} compact={compact} onRead={setReader} />)}</div> : <Empty>Aucun article pour ce filtre. Lancez une collecte ou ajustez les sources.</Empty>}{reader && <Reader article={reader} close={() => setReader(null)} />}</div>;
-}
-function Digest({ articles }: { articles: Article[] }) {
-  const [lastVisit, setLastVisit] = useState(() => localStorage.getItem("argos-last-visit") || new Date(Date.now() - 86400000).toISOString()); const [reader, setReader] = useState<Article | null>(null);
-  const recent = useMemo(() => articles.filter((item) => new Date(item.published_at || item.collected_at) > new Date(lastVisit)), [articles, lastVisit]);
-  const markRead = () => { const now = new Date().toISOString(); localStorage.setItem("argos-last-visit", now); setLastVisit(now); };
-  return <div className="space-y-4"><Card className="p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><SectionTitle>Depuis votre dernière visite</SectionTitle><p className="text-sm text-muted-foreground">{recent.length} article(s) depuis le {formatDate(lastVisit)}. Cette préférence est locale à ce navigateur.</p></div><Button variant="secondary" onClick={markRead} iconStart={<CheckCircle2 className="size-4" />}>Marquer comme lu</Button></div></Card>{recent.length ? <div className="space-y-3">{recent.map((article) => <ArticleCard key={article.id} article={article} compact={false} onRead={setReader} />)}</div> : <Empty>Pas de nouvelle lecture depuis votre dernier passage.</Empty>}{reader && <Reader article={reader} close={() => setReader(null)} />}</div>;
-}
-function Health({ appHealth, sources, config, refresh }: { appHealth: AppHealth | null; sources: SourceHealth[]; config: Config; refresh: () => void }) {
-  const [testing, setTesting] = useState(""); const sourceMap = config.categories.flatMap((category) => category.sources.map((source) => ({ category, source })));
-  const test = async (sourceName: string) => { const found = sourceMap.find((item) => item.source.name === sourceName); if (!found) return; setTesting(sourceName); try { await api("/health/sources/test", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(found) }); } finally { setTesting(""); refresh(); } };
-  return <div className="space-y-4"><section className="grid gap-3 md:grid-cols-4"><Card className="p-4"><Label>Base SQLite</Label><div className="text-xl font-semibold">{appHealth ? formatBytes(appHealth.database_bytes) : "—"}</div></Card><Card className="p-4"><Label>Doublons regroupés</Label><div className="text-xl font-semibold">{appHealth?.duplicates ?? "—"}</div></Card><Card className="p-4"><Label>Sources saines</Label><div className="text-xl font-semibold text-success">{appHealth?.sources_healthy ?? "—"}</div></Card><Card className="p-4"><Label>Sources en erreur</Label><div className="text-xl font-semibold text-error">{appHealth?.sources_failing ?? "—"}</div></Card></section><Card className="p-5"><SectionTitle>Santé des sources</SectionTitle><div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="border-b border-border text-xs text-muted-foreground"><tr><th className="pb-2">Source</th><th className="pb-2">Dernière réussite</th><th className="pb-2">Latence</th><th className="pb-2">HTTP</th><th className="pb-2">Volume</th><th className="pb-2">État</th><th /></tr></thead><tbody>{sources.map((source) => <tr key={source.source} className="border-b border-border/50"><td className="py-3"><div className="font-medium">{source.source}</div><div className="text-xs text-muted-foreground">{source.category}</div></td><td>{formatDate(source.last_success_at)}</td><td>{source.latency_ms} ms</td><td>{source.http_status ?? "—"}</td><td>{source.last_item_count}</td><td>{source.last_error ? <span className="text-error" title={source.last_error}>Erreur</span> : <span className="text-success">OK</span>}</td><td><Button variant="ghost" disabled={testing === source.source} onClick={() => test(source.source)} iconStart={<TestTube2 className="size-4" />}>{testing === source.source ? "Test…" : "Tester"}</Button></td></tr>)}</tbody></table></div>{!sources.length && <Empty>La santé par source apparaîtra après la première collecte.</Empty>}</Card><Card className="p-5"><SectionTitle>Services IA</SectionTitle><div className="flex items-center gap-3 text-sm">{appHealth?.assistant.available ? <CheckCircle2 className="size-5 text-success" /> : <CircleAlert className="size-5 text-warning" />}<span>Assistant Nyx : {appHealth?.assistant.available ? "joignable" : "indisponible"} · {appHealth?.assistant.url ?? "—"}</span></div></Card></div>;
-}
-type SemanticPoint = { id: string; title: string; summary: string; url: string; source: string; category: string; score: number; cluster_id: string | null; cluster_name: string | null; color: string; x: number; y: number };
-function SemanticMap() {
-  const [points, setPoints] = useState<SemanticPoint[]>([]); const [message, setMessage] = useState(""); const [selected, setSelected] = useState<SemanticPoint | null>(null);
-  const load = () => { void api<{ points: SemanticPoint[]; message?: string }>("/viz/semantic-map").then((data) => { setPoints(data.points); setMessage(data.message ?? ""); }).catch((error) => setMessage(error instanceof Error ? error.message : "Carte indisponible")); };
-  useEffect(load, []);
-  return <Card className="overflow-hidden p-0"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><SectionTitle>Nuage sémantique</SectionTitle><p className="text-sm text-muted-foreground">Chaque point est un article ; les proximités viennent des embeddings locaux.</p></div><Button variant="secondary" onClick={load} iconStart={<RefreshCw className="size-4" />}>Actualiser</Button></div><div className="grid min-h-[460px] md:grid-cols-[1fr_280px]"><div className="relative overflow-hidden bg-slate-950" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(255,255,255,.12) 1px, transparent 0)", backgroundSize: "24px 24px" }}>{points.map((point) => <button key={point.id} title={point.title} onClick={() => setSelected(point)} className="absolute size-3 rounded-full border border-white/70 shadow transition hover:z-10 hover:scale-150" style={{ left: (4 + point.x * 92) + "%", top: (5 + point.y * 88) + "%", backgroundColor: point.color }} />)}{!points.length && <div className="absolute inset-0 grid place-items-center p-8 text-center text-sm text-slate-300">{message || "Chargement des embeddings…"}</div>}<div className="absolute bottom-3 left-4 text-xs text-slate-400">{points.length} articles projetés · couleur = thématique</div></div><div className="border-t border-border bg-background p-4 md:border-l md:border-t-0">{selected ? <><div className="text-xs text-muted-foreground">{selected.category}{selected.cluster_name ? " · " + selected.cluster_name : ""}</div><a className="mt-2 block text-sm font-semibold hover:underline" href={selected.url} target="_blank" rel="noreferrer">{selected.title}</a><p className="mt-3 line-clamp-6 text-sm text-muted-foreground">{selected.summary}</p><div className="mt-4 text-xs text-muted-foreground">{selected.source} · score {selected.score}</div></> : <div className="text-sm text-muted-foreground">Sélectionnez un point pour lire son contexte et ouvrir la source.</div>}</div></div></Card>;
+function AppShell({
+  tab,
+  stats,
+  error,
+  onTabChange,
+  children,
+}: {
+  tab: Tab;
+  stats: Stats;
+  error: string;
+  onTabChange: (tab: Tab) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-h-screen bg-background text-foreground md:flex">
+      <aside className="border-b border-border bg-muted md:min-h-screen md:w-60 md:border-b-0 md:border-r">
+        <div className="p-5">
+          <div className="flex items-center gap-2">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
+              <Rss className="size-4" />
+            </div>
+            <div>
+              <h1 className="font-semibold">Argos</h1>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                RSS Monitor
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col">
+          {NAVIGATION.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.value;
+            return (
+              <button
+                key={item.value}
+                onClick={() => onTabChange(item.value)}
+                className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                  active
+                    ? "bg-background font-medium text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
+              >
+                <Icon className="size-4" />
+                {item.label}
+                {item.value === "assistant" && (
+                  <span className="ml-auto rounded bg-warning/15 px-1.5 py-0.5 text-[10px] text-warning">
+                    WIP
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="hidden px-5 pt-6 text-xs text-muted-foreground md:block">
+          <div className="flex items-center gap-2">
+            <Database className="size-3" />
+            Atlas · :1207
+          </div>
+          <div className="mt-2">{stats.total} signaux indexés</div>
+        </div>
+      </aside>
+
+      <main className="min-w-0 flex-1">
+        <header className="border-b border-border bg-background/80 px-6 py-4 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center justify-end">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Activity className="size-4 text-success" />
+              Opérationnel
+            </div>
+          </div>
+        </header>
+        <div className="mx-auto max-w-7xl px-6 py-6">
+          {error && (
+            <div className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+              {error}
+            </div>
+          )}
+          <ErrorBoundary key={tab}>{children}</ErrorBoundary>
+        </div>
+      </main>
+    </div>
+  );
 }
 
-function Viz({ clusters, heat, onRefresh, refreshClusters }: { clusters: ClusterResponse | null; heat: HeatCell[]; onRefresh: () => void; refreshClusters: () => void }) {
-  const [mode, setMode] = useState("source-category"); const [cells, setCells] = useState(heat); useEffect(() => { void api<{ cells: HeatCell[] }>(`/viz/heatmap?mode=${mode}`).then((data) => setCells(data.cells)); }, [mode]); const [names, setNames] = useState<Record<string, string>>({}); const max = Math.max(1, ...cells.map((item) => item.value)); const xs = [...new Set(cells.map((item) => item.x))]; const ys = [...new Set(cells.map((item) => item.y))];
-  const saveName = async (id: string, fallback: string) => { await api(`/clusters/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: names[id] || fallback }) }); onRefresh(); };
-  return <div className="space-y-4"><SemanticMap /><Card className="p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><SectionTitle>Carte de chaleur</SectionTitle><p className="text-sm text-muted-foreground">Intensité = nombre d'articles uniques.</p></div><select value={mode} onChange={(event) => { const next = event.target.value; setMode(next); window.location.hash = next; }} className="h-9 rounded-md border border-border bg-background px-3 text-sm"><option value="source-category">Source × thématique</option><option value="day">Activité par jour</option></select></div><div className="mt-4 overflow-x-auto"><div className="grid min-w-[680px] gap-1" style={{ gridTemplateColumns: `180px repeat(${xs.length}, minmax(52px, 1fr))` }}><div />{xs.map((x) => <div key={x} className="truncate px-1 text-center text-[10px] text-muted-foreground" title={x}>{x}</div>)}{ys.map((y) => <><div key={`${y}-label`} className="truncate pr-2 text-xs text-muted-foreground" title={y}>{y}</div>{xs.map((x) => { const cell = cells.find((item) => item.x === x && item.y === y); return <div key={`${x}-${y}`} title={`${x} · ${y} : ${cell?.value ?? 0}`} className="flex h-9 items-center justify-center rounded bg-brand text-xs text-brand-foreground" style={{ opacity: cell ? Math.max(0.15, cell.value / max) : 0.04 }}>{cell?.value ?? ""}</div>; })}</>)}</div></div></Card><Card className="p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><SectionTitle>Clusters sémantiques</SectionTitle><p className="text-sm text-muted-foreground">Embeddings batchés avec nomic-embed-text-v2-moe sur Nyx. Les noms sont éditables.</p></div><Button onClick={refreshClusters} disabled={clusters?.state.running} iconStart={<Sparkles className="size-4" />}>{clusters?.state.running ? "Clustering…" : "Actualiser les clusters"}</Button></div>{clusters?.state.error && <p className="mt-3 text-sm text-error">{clusters.state.error}</p>}<div className="mt-4 grid gap-3 md:grid-cols-2">{clusters?.clusters.map((cluster) => <div key={cluster.id} className="rounded-lg border border-border p-3"><div className="flex gap-2"><input value={names[cluster.id] ?? cluster.name} onChange={(event) => setNames({ ...names, [cluster.id]: event.target.value })} className="h-8 min-w-0 flex-1 rounded border border-border bg-background px-2 text-sm font-medium" /><Button variant="ghost" onClick={() => saveName(cluster.id, cluster.name)}><Save className="size-4" /></Button></div><p className="mt-2 text-xs text-muted-foreground">{cluster.size} articles · suggestion : {cluster.auto_name}</p><ul className="mt-2 list-disc pl-4 text-xs text-secondary-foreground">{cluster.titles.map((title) => <li key={title} className="truncate">{title}</li>)}</ul></div>)}</div>{!clusters?.clusters.length && <Empty>Lancez l'actualisation pour créer les premiers clusters.</Empty>}</Card></div>;
-}
-function Assistant({ status }: { status: AssistantStatus | null }) {
-  const [prompt, setPrompt] = useState(""); const [answer, setAnswer] = useState(""); const [loading, setLoading] = useState(false); const send = async () => { if (!prompt.trim()) return; setLoading(true); try { setAnswer((await api<{ answer: string }>("/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt }) })).answer); } catch (error) { setAnswer(error instanceof Error ? error.message : "Assistant indisponible"); } finally { setLoading(false); } };
-  return <div className="space-y-4"><Card className="p-6"><div className="flex items-center gap-3"><Bot className="size-7 text-brand" /><div><div className="flex items-center gap-2"><SectionTitle>Assistant <Pill tone="success">RAG</Pill></SectionTitle></div><p className="text-sm text-muted-foreground">Inférence Nyx via {status?.url ?? "http://192.168.1.11:1434"} · modèle {status?.model ?? "qwen3.6:27b"}.</p></div></div><div className="mt-5 rounded-lg border border-border bg-muted p-3 text-sm">{status?.available ? <span className="text-success">Endpoint joignable. Les réponses sont enrichies par les articles sémantiquement les plus pertinents et citent leur contexte.</span> : <span className="text-warning">Endpoint actuellement indisponible : {status?.error ?? "diagnostic en cours"}. L'onglet reste prêt lorsque Nyx :1434 sera démarré.</span>}</div><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Questionner l'assistant (WIP)…" className="mt-4 min-h-28 w-full rounded-lg border border-border bg-background p-3 text-sm" /><div className="mt-3 flex justify-end"><Button onClick={send} disabled={loading || !status?.available} iconStart={<Bot className="size-4" />}>{loading ? "Inférence…" : "Envoyer"}</Button></div>{answer && <div className="mt-5 rounded-lg border border-border p-4 text-sm leading-6 whitespace-pre-wrap">{answer}</div>}</Card></div>;
-}
-function Sources({ config, onChange, onSave, saving }: { config: Config; onChange: (config: Config) => void; onSave: () => void; saving: boolean }) {
-  const updateCategory = (index: number, patch: Partial<Category>) => onChange({ ...config, categories: config.categories.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item) }); const updateSource = (categoryIndex: number, sourceIndex: number, patch: Partial<Source>) => updateCategory(categoryIndex, { sources: config.categories[categoryIndex].sources.map((source, index) => index === sourceIndex ? { ...source, ...patch } : source) });
-  return <div className="space-y-4"><Card className="p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><SectionTitle>Sources de veille</SectionTitle><p className="text-sm text-muted-foreground">Enregistrées dans <code>config/sources.yml</code>.</p></div><Button onClick={onSave} disabled={saving} iconStart={<Save className="size-4" />}>{saving ? "Enregistrement…" : "Enregistrer"}</Button></div></Card>{config.categories.map((category, categoryIndex) => <Card key={`${category.name}-${categoryIndex}`} className="p-4"><div className="mb-4 flex flex-col gap-2 sm:flex-row"><input value={category.name} onChange={(event) => updateCategory(categoryIndex, { name: event.target.value })} className="h-9 flex-1 rounded-md border border-border bg-background px-3 font-medium" /><input value={(category.keywords ?? []).join(", ")} onChange={(event) => updateCategory(categoryIndex, { keywords: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} placeholder="Mots-clés" className="h-9 flex-[2] rounded-md border border-border bg-background px-3 text-sm" /></div>{category.sources.map((source, sourceIndex) => <div key={`${source.name}-${sourceIndex}`} className="grid gap-2 border-t border-border/60 pt-3 md:grid-cols-[auto_1fr_2fr_auto]"><input type="checkbox" checked={source.enabled !== false} onChange={(event) => updateSource(categoryIndex, sourceIndex, { enabled: event.target.checked })} className="mt-2 size-4" /><input value={source.name} onChange={(event) => updateSource(categoryIndex, sourceIndex, { name: event.target.value })} className="h-9 rounded-md border border-border bg-background px-3 text-sm" /><input value={source.url} onChange={(event) => updateSource(categoryIndex, sourceIndex, { url: event.target.value })} className="h-9 rounded-md border border-border bg-background px-3 text-sm" /><Button variant="ghost" onClick={() => updateCategory(categoryIndex, { sources: category.sources.filter((_, index) => index !== sourceIndex) })}>Retirer</Button></div>)}<Button variant="secondary" className="mt-4" iconStart={<Plus className="size-4" />} onClick={() => updateCategory(categoryIndex, { sources: [...category.sources, { name: "Nouvelle source", url: "https://" }] })}>Ajouter une source</Button></Card>)}<Button variant="secondary" iconStart={<Plus className="size-4" />} onClick={() => onChange({ ...config, categories: [...config.categories, { name: "Nouvelle catégorie", keywords: [], sources: [] }] })}>Ajouter une catégorie</Button></div>;
-}
 export function App() {
-  const [tab, setTab] = useState<Tab>("watch"); const [config, setConfig] = useState<Config>(EMPTY_CONFIG); const [articles, setArticles] = useState<Article[]>([]); const [stats, setStats] = useState<Stats>({ total: 0, sources: 0, last_collection: null }); const [collection, setCollection] = useState<Collection>({ running: false, started_at: null, finished_at: null, result: null, error: null }); const [appHealth, setAppHealth] = useState<AppHealth | null>(null); const [sourceHealth, setSourceHealth] = useState<SourceHealth[]>([]); const [clusters, setClusters] = useState<ClusterResponse | null>(null); const [heat, setHeat] = useState<HeatCell[]>([]); const [assistantStatus, setAssistantStatus] = useState<AssistantStatus | null>(null); const [error, setError] = useState(""); const [saving, setSaving] = useState(false); const refreshInProgress = useRef(false);
-  const refresh = async () => {
-    if (refreshInProgress.current) { traceNetwork("/refresh", 1, "failure", "rafraîchissement ignoré : déjà en cours"); return; }
+  const [tab, setTab] = useState<Tab>("watch");
+  const [config, setConfig] = useState<Config>(EMPTY_CONFIG);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [stats, setStats] = useState<Stats>({
+    total: 0,
+    sources: 0,
+    last_collection: null,
+  });
+  const [collection, setCollection] = useState<AsyncState>(EMPTY_ASYNC_STATE);
+  const [appHealth, setAppHealth] = useState<AppHealth | null>(null);
+  const [sourceHealth, setSourceHealth] = useState<SourceHealth[]>([]);
+  const [clusters, setClusters] = useState<ClusterResponse | null>(null);
+  const [heat, setHeat] = useState<HeatCell[]>([]);
+  const [assistantStatus, setAssistantStatus] =
+    useState<AssistantStatus | null>(null);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const refreshInProgress = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (refreshInProgress.current) return;
     refreshInProgress.current = true;
-    const requests: Array<[string, Promise<unknown>]> = [
-      ["/sources", api<Config>("/sources")], ["/articles?limit=400", api<{ articles: Article[] }>("/articles?limit=400")], ["/stats", api<Stats>("/stats")],
-      ["/refresh", api<Collection>("/refresh")], ["/health/app", api<AppHealth>("/health/app")], ["/health/sources", api<{ sources: SourceHealth[] }>("/health/sources")],
-      ["/clusters", api<ClusterResponse>("/clusters")], ["/viz/heatmap", api<{ cells: HeatCell[] }>("/viz/heatmap")], ["/assistant/status", api<AssistantStatus>("/assistant/status")],
-    ];
+
+    const failures = await Promise.all([
+      loadResource<Config>("/sources", setConfig),
+      loadResource<{ articles: Article[] }>("/articles?limit=400", (value) =>
+        setArticles(value.articles),
+      ),
+      loadResource<Stats>("/stats", setStats),
+      loadResource<AsyncState>("/refresh", setCollection),
+      loadResource<AppHealth>("/health/app", setAppHealth),
+      loadResource<{ sources: SourceHealth[] }>("/health/sources", (value) =>
+        setSourceHealth(value.sources),
+      ),
+      loadResource<ClusterResponse>("/clusters", setClusters),
+      loadResource<{ cells: HeatCell[] }>("/viz/heatmap", (value) =>
+        setHeat(value.cells),
+      ),
+      loadResource<AssistantStatus>("/assistant/status", setAssistantStatus),
+    ]);
+
+    const messages = failures.filter((failure): failure is string =>
+      Boolean(failure),
+    );
+    setError(
+      messages.length
+        ? `Rafraîchissement partiel — ${messages.join(" | ")}`
+        : "",
+    );
+    refreshInProgress.current = false;
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 10_000);
+    return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  const startCollection = async () => {
     try {
-      const results = await Promise.allSettled(requests.map(([, promise]) => promise));
-      const read = <T,>(index: number): T | undefined => results[index].status === "fulfilled" ? results[index].value as T : undefined;
-      const nextConfig = read<Config>(0), nextArticles = read<{ articles: Article[] }>(1), nextStats = read<Stats>(2), nextCollection = read<Collection>(3);
-      const nextHealth = read<AppHealth>(4), nextSources = read<{ sources: SourceHealth[] }>(5), nextClusters = read<ClusterResponse>(6), nextHeat = read<{ cells: HeatCell[] }>(7), nextAssistant = read<AssistantStatus>(8);
-      if (nextConfig) setConfig(nextConfig); if (nextArticles) setArticles(nextArticles.articles); if (nextStats) setStats(nextStats); if (nextCollection) setCollection(nextCollection);
-      if (nextHealth) setAppHealth(nextHealth); if (nextSources) setSourceHealth(nextSources.sources); if (nextClusters) setClusters(nextClusters); if (nextHeat) setHeat(nextHeat.cells); if (nextAssistant) setAssistantStatus(nextAssistant);
-      const failures = results.flatMap((result, index) => result.status === "rejected" ? [requests[index][0] + " : " + (result.reason instanceof Error ? result.reason.message : String(result.reason))] : []);
-      setError(failures.length ? "Diagnostic réseau (partiel) — " + failures.join(" | ") + ". Consultez window.__ARGOS_NETWORK_DEBUG__ dans la console." : "");
+      setCollection(await api<AsyncState>("/refresh", { method: "POST" }));
     } catch (reason) {
-      setError("Diagnostic réseau — " + (reason instanceof Error ? reason.message : String(reason)));
-    } finally {
-      refreshInProgress.current = false;
+      setError(
+        reason instanceof Error ? reason.message : "Collecte impossible",
+      );
     }
   };
-  useEffect(() => { void refresh(); const timer = window.setInterval(() => { void refresh(); }, 10000); return () => window.clearInterval(timer); }, []);
-  const startCollection = async () => { try { setCollection(await api<Collection>("/refresh", { method: "POST" })); } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible de démarrer la collecte"); } };
-  const save = async () => { setSaving(true); try { await api("/sources", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(config) }); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Impossible d'enregistrer les sources"); } finally { setSaving(false); } };
-  const refreshClusters = async () => { try { await api("/clusters", { method: "POST" }); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Clustering impossible"); } };
-  const content = tab === "watch" ? <Watch config={config} stats={stats} articles={articles} collection={collection} onCollect={startCollection} /> : tab === "digest" ? <Digest articles={articles} /> : tab === "health" ? <Health appHealth={appHealth} sources={sourceHealth} config={config} refresh={() => { void refresh(); }} /> : tab === "viz" ? <Viz clusters={clusters} heat={heat} onRefresh={() => { void refresh(); }} refreshClusters={refreshClusters} /> : tab === "assistant" ? <Assistant status={assistantStatus} /> : <Sources config={config} onChange={setConfig} onSave={save} saving={saving} />;
-  return <div className="min-h-screen bg-background text-foreground md:flex"><aside className="border-b border-border bg-muted md:min-h-screen md:w-60 md:border-b-0 md:border-r"><div className="p-5"><div className="flex items-center gap-2"><div className="flex size-8 items-center justify-center rounded-lg bg-brand text-brand-foreground"><Rss className="size-4" /></div><div><h1 className="font-semibold">Argos</h1><p className="text-[11px] uppercase tracking-wider text-muted-foreground">RSS Monitor</p></div></div></div><nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col">{NAV.map((item) => { const Icon = item.icon; return <button key={item.value} onClick={() => setTab(item.value)} className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${tab === item.value ? "bg-background font-medium text-foreground shadow-sm" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}><Icon className="size-4" />{item.label}{item.value === "assistant" && <span className="ml-auto rounded bg-warning/15 px-1.5 py-0.5 text-[10px] text-warning">WIP</span>}</button>; })}</nav><div className="hidden px-5 pt-6 text-xs text-muted-foreground md:block"><div className="flex items-center gap-2"><Database className="size-3" />Atlas · :1207</div><div className="mt-2">{stats.total} signaux indexés</div></div></aside><main className="min-w-0 flex-1"><header className="border-b border-border bg-background/80 px-6 py-4 backdrop-blur"><div className="mx-auto flex max-w-7xl items-center justify-between"><div><h2 className="text-lg font-semibold">{NAV.find((item) => item.value === tab)?.label}</h2><p className="text-sm text-muted-foreground">Veille IA locale, sources éditables et données persistantes.</p></div><div className="flex items-center gap-2 text-xs text-muted-foreground"><Activity className="size-4 text-success" />Opérationnel</div></div></header><div className="mx-auto max-w-7xl px-6 py-6">{error && <div className="mb-4 rounded-lg border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">{error}</div>}<ErrorBoundary key={tab}>{content}</ErrorBoundary></div></main></div>;
+
+  const saveSources = async () => {
+    setSaving(true);
+    try {
+      await api("/sources", jsonRequest("PUT", config));
+      await refresh();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Enregistrement impossible",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const refreshClusters = async () => {
+    try {
+      await api("/clusters", { method: "POST" });
+      await refresh();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Clustering impossible",
+      );
+    }
+  };
+
+  let content: ReactNode;
+  switch (tab) {
+    case "watch":
+      content = (
+        <WatchView
+          config={config}
+          stats={stats}
+          articles={articles}
+          collection={collection}
+          onCollect={startCollection}
+        />
+      );
+      break;
+    case "digest":
+      content = <DigestView articles={articles} />;
+      break;
+    case "health":
+      content = (
+        <HealthView
+          appHealth={appHealth}
+          sources={sourceHealth}
+          config={config}
+          refresh={() => void refresh()}
+        />
+      );
+      break;
+    case "viz":
+      content = (
+        <VizView
+          clusters={clusters}
+          heat={heat}
+          onRefresh={() => void refresh()}
+          refreshClusters={refreshClusters}
+        />
+      );
+      break;
+    case "assistant":
+      content = <AssistantView status={assistantStatus} />;
+      break;
+    case "sources":
+      content = (
+        <SourcesView
+          config={config}
+          onChange={setConfig}
+          onSave={saveSources}
+          saving={saving}
+        />
+      );
+      break;
+  }
+
+  return (
+    <AppShell tab={tab} stats={stats} error={error} onTabChange={setTab}>
+      {content}
+    </AppShell>
+  );
 }
