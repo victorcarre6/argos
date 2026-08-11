@@ -1,4 +1,4 @@
-import { ExternalLink, X } from "lucide-react";
+import { ExternalLink, Star, X } from "lucide-react";
 
 import { formatDate } from "../lib/format";
 import type { Article, Priority } from "../types";
@@ -20,15 +20,53 @@ export function ArticleCard({
   article,
   compact,
   onRead,
+  onHide,
+  onFavorite,
+  sourceColor,
 }: {
   article: Article;
   compact: boolean;
   onRead: (article: Article) => void;
+  onHide?: (article: Article) => void;
+  onFavorite?: (article: Article) => void;
+  sourceColor?: string;
 }) {
   return (
     <Card
       className={`${compact ? "p-3" : "p-4"} relative ${PRIORITY_BORDER[article.priorité]}`}
     >
+      {onHide && (
+        <button
+          type="button"
+          className="absolute right-2 top-2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          onClick={() => onHide(article)}
+          aria-label={`Retirer ${article.title} de la vue`}
+          title="Retirer de la vue"
+        >
+          <X className="size-4" />
+        </button>
+      )}
+      {onFavorite && (
+        <button
+          type="button"
+          className={`absolute right-9 top-2 rounded p-1 transition-colors hover:bg-muted ${
+            article.candidate === "good"
+              ? "text-amber-500"
+              : "text-muted-foreground hover:text-amber-500"
+          }`}
+          onClick={() => onFavorite(article)}
+          aria-label={`Marquer ${article.title} comme bon candidat`}
+          title="Bon candidat"
+        >
+          <Star
+            className="size-4"
+            fill={article.candidate === "good" ? "currentColor" : "none"}
+          />
+        </button>
+      )}
+      <span className="absolute right-2 top-10 font-mono text-sm font-normal text-brand">
+        {article.score}
+      </span>
       <div className="flex gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap gap-2">
@@ -38,6 +76,11 @@ export function ArticleCard({
             {article.keys.map((key) => (
               <Pill key={key} tone="success">
                 {key}
+              </Pill>
+            ))}
+            {article.tags.map((tag) => (
+              <Pill key={tag} tone="neutral">
+                {tag}
               </Pill>
             ))}
           </div>
@@ -53,9 +96,24 @@ export function ArticleCard({
             </p>
           )}
           <div className="mt-3 flex items-center gap-2 pr-9 text-xs text-secondary-foreground">
+            <span
+              className="rounded-full border px-2 py-0.5 font-medium"
+              style={
+                sourceColor
+                  ? {
+                      backgroundColor: `${sourceColor}1f`,
+                      borderColor: `${sourceColor}66`,
+                      color: sourceColor,
+                    }
+                  : undefined
+              }
+            >
+              {article.source}
+            </span>
             <span>
-              {article.source} ·{" "}
-              {formatDate(article.published_at || article.collected_at)}
+              {article.published_at
+                ? `Publié le ${formatDate(article.published_at)}`
+                : "Date de publication non fournie"}
             </span>
             <a
               className="inline-flex items-center gap-1 hover:text-brand"
@@ -66,9 +124,6 @@ export function ArticleCard({
               Source <ExternalLink className="size-3" />
             </a>
           </div>
-        </div>
-        <div className="font-mono text-lg font-semibold text-brand">
-          {article.score}
         </div>
       </div>
       <span
@@ -109,7 +164,9 @@ export function Reader({
         <div className="mt-5 flex items-center justify-between border-t border-border pt-4 text-sm">
           <span>
             {article.source} ·{" "}
-            {formatDate(article.published_at || article.collected_at)}
+            {article.published_at
+              ? `publié le ${formatDate(article.published_at)}`
+              : "date de publication non fournie"}
           </span>
           <a
             className="inline-flex items-center gap-1 text-brand"

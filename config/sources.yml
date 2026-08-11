@@ -2,17 +2,31 @@ app:
   name: Argos
   description: Moniteur RSS pour IA agentique, RAG, deep learning, MLOps et HPC
 storage:
-  retention_days: 180
+  retention_days: 30
+collection:
+  max_age_days: 7
+tags:
+  agents: [agent, agents, agentic, multi-agent, tool calling]
+  rag: [RAG, retrieval augmented generation, retrieval-augmented generation]
+  llm: [LLM, large language model, language model, foundation model]
+  modeles: [model release, open weight, open-weight, multimodal]
+  entrainement: [training, distributed training, deep learning, neural network]
+  fine_tuning: [fine-tuning, fine tuning, finetuning]
+  inference: [inference, serving, runtime, throughput, latency]
+  embeddings: [embedding, embeddings, vector database, vector store]
+  recherche: [research, paper, benchmark, search]
+  evaluation: [Evaluation, Model Evaluation, Evals, Red Teaming]
+  securite: [AI security, LLM security, prompt injection, guardrails, cybersecurity]
+  observabilite: [observability, monitoring, experiment tracking, tracing]
+  deploiement: [deployment, Kubernetes, orchestration, workflow, MLOps]
+  cloud: [cloud, AI platform, data platform, enterprise AI]
+  hpc: [GPU, CUDA, ROCm, Slurm, accelerator]
+  reglementation: [AI policy, regulation, governance, standards, public sector]
+  financement: [call for proposals, funding, grant, France 2030, Horizon Europe, Digital Europe]
+  optimisation: [quantization, optimization, reranking, chunking]
 categories:
-- name: Agrégateurs & publications
+- name: Aggrégateurs
   color: '#6d5dfc'
-  keywords:
-  - paper
-  - research
-  - benchmark
-  - foundation model
-  - language model
-  - deep learning
   sources:
   - name: Hugging Face — Daily Papers
     url: https://papers.takara.ai/api/feed
@@ -44,257 +58,70 @@ categories:
     - recherche
     - Deep Learning
     priorité: 3
-- name: Institutions publiques et politiques
-  color: '#be123c'
-  keywords:
-  - AI policy
-  - regulation
-  - governance
-  - standards
-  - public sector
-  - security
-  sources:
-  - name: France Numérique
-    url: https://www.francenum.gouv.fr/flux-rss-principal
+  - name: The Neuron
+    url: https://www.theneuron.ai/newsletter/feed/
     keys:
-    - Politique
-    - Cloud
-    priorité: 2
-  - name: Commission européene de la stratégie numérique
-    url: https://digital-strategy.ec.europa.eu/en/rss.xml
-    keys:
-    - Politique
-    - Cloud
-    priorité: 2
-  - name: US NIST Artificial Intelligence
-    url: https://www.nist.gov/feeds/artificial-intelligence.xml
-    keys:
-    - Politique
-    - recherche
-    priorité: 2
-  - name: Chine — Ministère des Affaires étrangères
-    url: https://cs.mfa.gov.cn/gyls/lsgz/lqbb/rss_57447.xml
-    keys:
-    - Politique
-    priorité: 3
-  - name: OECD AI
-    url: https://oecd.ai/en/rss
-    keys:
-    - Politique
-    - recherche
-    priorité: 3
-  - name: Partnership on AI
-    url: https://partnershiponai.org/feed/
-    keys:
-    - Politique
-    - recherche
-    priorité: 3
-  - name: Center for Security and Emerging Technology
-    url: https://cset.georgetown.edu/feed/
-    keys:
-    - Politique
-    - recherche
-    priorité: 2
-  - name: AI Now Institute
-    url: https://ainowinstitute.org/feed
-    keys:
-    - Politique
-    - recherche
-    priorité: 3
-  - name: ANSSI
-    url: https://cyber.gouv.fr/actualites/rss/
-    keys:
-    - Politique
-    - Cybersécurité
-    - IA Agentique
-    priorité: 1
-  - name: CERT-FR
-    url: https://www.cert.ssi.gouv.fr/feed/
-    keys:
-    - Cybersécurité
-    - Monitoring
-    priorité: 1
-  - name: CNIL
-    url: https://www.cnil.fr/fr/rss.xml
-    keys:
-    - Politique
-    - Cybersécurité
-    - IA Agentique
-    priorité: 1
-  - name: ENISA News
-    url: https://www.enisa.europa.eu/news/enisa-news/RSS
-    keys:
-    - Politique
-    - Cybersécurité
-    priorité: 3
-  - name: UK AI Security Institute
-    url: https://www.gov.uk/search/news-and-communications.atom?organisations%5B%5D=ai-security-institute
-    keys:
-    - recherche
-    - Politique
-    - Cybersécurité
-    priorité: 3
-  - name: UK NCSC — Artificial Intelligence
-    url: https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml
-    keys:
-    - Politique
-    - IA Agentique
-    - Cybersécurité
-    priorité: 3
-- name: Sécurité, guardrails & évaluation IA
-  color: '#dc2626'
-  keywords:
-  - AI security
-  - LLM security
-  - prompt injection
-  - red teaming
-  - guardrails
-  - model evaluation
-  sources:
-  - name: Microsoft PyRIT Releases
-    url: https://github.com/Azure/PyRIT/releases.atom
-    keys:
-    - LLM
-    - Cybersécurité
-    - recherche
-    priorité: 3
-  - name: NVIDIA garak Releases
-    url: https://github.com/NVIDIA/garak/releases.atom
-    keys:
-    - LLM
-    - Cybersécurité
-    - Monitoring
-    priorité: 3
-  - name: UK AISI Inspect AI Releases
-    url: https://github.com/UKGovernmentBEIS/inspect_ai/releases.atom
-    keys:
-    - LLM
-    - Politique
-    - Cybersécurité
-    - recherche
-    priorité: 2
-  - name: NeMo Guardrails Releases
-    url: https://github.com/NVIDIA/NeMo-Guardrails/releases.atom
-    keys:
-    - LLM
-    - Orchestration
-    - Cybersécurité
-    priorité: 1
-  - name: Giskard Releases
-    url: https://github.com/Giskard-AI/giskard/releases.atom
-    keys:
-    - LLM
-    - RAG
-    - Monitoring
-    - Cybersécurité
-    priorité: 3
-  - name: Promptfoo Releases
-    url: https://github.com/promptfoo/promptfoo/releases.atom
-    keys:
-    - LLM
-    - Monitoring
-    - Cybersécurité
-    priorité: 1
-  - name: LLM Guard Releases
-    url: https://github.com/protectai/llm-guard/releases.atom
-    keys:
-    - LLM
-    - Cybersécurité
-    - Ops
-    priorité: 1
-  - name: Guardrails AI Releases
-    url: https://github.com/guardrails-ai/guardrails/releases.atom
-    keys:
-    - LLM
-    - Orchestration
-    - Cybersécurité
-    priorité: 1
-  - name: OWASP GenAI Security Project
-    url: https://github.com/OWASP/Top10-for-Large-Language-Model-Applications/releases.atom
-    keys:
+    - Newsletter
     - LLM
     - IA Agentique
-    - Cybersécurité
     priorité: 1
-- name: Appels à projets & financements
-  color: '#059669'
-  keywords:
-  - call for proposals
-  - funding
-  - grant
-  - France 2030
-  - Horizon Europe
-  - Digital Europe
-  sources:
-  - name: Bpifrance
-    url: https://www.bpifrance.fr/nos-appels-a-projets-concours
+  - name: Towards Data Science
+    url: https://towardsdatascience.com/feed
     keys:
-    - Appels à projets
+    - Newsletter
+    - recherche
+    - Deep Learning
+    priorité: 1
+  - name: MIT Technology Review — AI
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    keys:
+    - Newsletter
     - Politique
+    - recherche
+    priorité: 3
+  - name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/feed/
+    keys:
+    - Newsletter
+    - LLM
     - Cloud
-    enabled: false
-    priorité: 1
-  - name: ANR
-    url: https://anr.fr/fr/appels/
+    priorité: 3
+  - name: MarkTechPost
+    url: https://www.marktechpost.com/feed/
     keys:
+    - Newsletter
     - recherche
-    - Appels à projets
-    - Cybersécurité
-    enabled: false
-    priorité: 1
-  - name: HaDEA
-    url: https://hadea.ec.europa.eu/node/1/rss_en
+    - LLM
+    priorité: 3
+  - name: The Decoder
+    url: https://the-decoder.com/feed/
     keys:
-    - Appels à projets
-    - Cloud
+    - Newsletter
+    - LLM
+    priorité: 3
+  - name: Last Week in AI
+    url: https://lastweekin.ai/feed
+    keys:
+    - Newsletter
     - Politique
-    priorité: 2
-  - name: RAISE
-    url: https://research-and-innovation.ec.europa.eu/strategy/strategy-research-and-innovation/our-digital-future/european-ai-science-strategy/raise-resource-ai-science-europe_en
+    - LLM
+    priorité: 3
+  - name: Import AI
+    url: https://importai.substack.com/feed
     keys:
+    - Newsletter
     - recherche
-    - HPC
-    - Appels à projets
-    enabled: false
-    priorité: 2
-  - name: EuroHPC JU
-    url: https://eurohpc-ju.europa.eu/node/1/rss_en
-    keys:
-    - HPC
-    - Appels à projets
     - Politique
-    priorité: 1
-  - name: EU Funding & Tenders, Horizon Europe
-    url: https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/programmes/horizon
+    priorité: 3
+  - name: Ben's Bites
+    url: https://www.bensbites.com/feed
     keys:
-    - recherche
-    - Appels à projets
-    - Politique
-    enabled: false
-    priorité: 1
-  - name: US NSF — Funding opportunities
-    url: https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml
-    keys:
-    - recherche
-    - Appels à projets
-    priorité: 1
-  - name: DARPA
-    url: https://www.darpa.mil/work-with-us/opportunities
-    keys:
-    - recherche
-    - Cybersécurité
-    - Appels à projets
-    enabled: false
-    priorité: 2
-- name: Laboratoires & fournisseurs
+    - Newsletter
+    - LLM
+    - IA Agentique
+    priorité: 3
+- name: Laboratoires et providers
   color: '#2563eb'
-  keywords:
-  - LLM
-  - model release
-  - open weight
-  - fine-tuning
-  - multimodal
-  - AI platform
   sources:
   - name: OpenAI
     url: https://openai.com/news/rss.xml
@@ -323,7 +150,7 @@ categories:
     - Deep Learning
     priorité: 1
   - name: Meta AI
-    url: https://ai.meta.com/blog/rss/
+    url: https://engineering.fb.com/feed/
     keys:
     - recherche
     - LLM
@@ -335,7 +162,7 @@ categories:
     - LLM
     priorité: 2
   - name: Mistral AI
-    url: https://mistral.ai/news/feed/
+    url: https://github.com/mistralai/client-python/releases.atom
     keys:
     - LLM
     priorité: 1
@@ -346,13 +173,13 @@ categories:
     - RAG
     priorité: 3
   - name: Allen Institute for AI
-    url: https://allenai.org/blog/rss.xml
+    url: https://github.com/allenai/OLMo/releases.atom
     keys:
     - recherche
     - LLM
     priorité: 3
   - name: EleutherAI Blog
-    url: https://blog.eleuther.ai/rss/
+    url: https://github.com/EleutherAI/gpt-neox/releases.atom
     keys:
     - recherche
     - LLM
@@ -392,16 +219,8 @@ categories:
     - Deep Learning
     - LLM
     priorité: 2
-- name: Frameworks agentiques & orchestration
+- name: Frameworks et SDK
   color: '#0c9d78'
-  keywords:
-  - agent
-  - agentic
-  - tool calling
-  - MCP
-  - orchestration
-  - workflow
-  - multi-agent
   sources:
   - name: Model Context Protocol Releases
     url: https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom
@@ -460,7 +279,7 @@ categories:
     - Orchestration
     priorité: 2
   - name: Haystack Blog
-    url: https://haystack.deepset.ai/blog/rss.xml
+    url: https://github.com/deepset-ai/haystack/releases.atom
     keys:
     - IA Agentique
     - RAG
@@ -542,87 +361,6 @@ categories:
     - Orchestration
     - Ops
     priorité: 3
-- name: RAG
-  color: '#b466e8'
-  keywords:
-  - RAG
-  - retrieval
-  - embedding
-  - vector database
-  - reranking
-  - chunking
-  - search
-  sources:
-  - name: RAGFlow Releases
-    url: https://github.com/infiniflow/ragflow/releases.atom
-    keys:
-    - RAG
-    - Orchestration
-    priorité: 3
-  - name: Unstructured Blog
-    url: https://www.unstructured.io/blog/rss.xml
-    keys:
-    - RAG
-    priorité: 3
-  - name: Weaviate Blog
-    url: https://weaviate.io/blog/rss.xml
-    keys:
-    - RAG
-    - recherche
-    priorité: 2
-  - name: Qdrant Blog
-    url: https://qdrant.tech/blog/rss.xml
-    keys:
-    - RAG
-    - recherche
-    priorité: 1
-  - name: Milvus Blog
-    url: https://milvus.io/blog/rss.xml
-    keys:
-    - RAG
-    - recherche
-    priorité: 1
-  - name: pgvector Releases
-    url: https://github.com/pgvector/pgvector/releases.atom
-    keys:
-    - RAG
-    priorité: 1
-  - name: Elasticsearch Blog
-    url: https://www.elastic.co/blog/feed
-    keys:
-    - recherche
-    - RAG
-    - Monitoring
-    priorité: 2
-  - name: OpenSearch Blog
-    url: https://opensearch.org/blog/feed/
-    keys:
-    - recherche
-    - RAG
-    - Monitoring
-    priorité: 2
-  - name: MongoDB Blog
-    url: https://www.mongodb.com/blog/rss.xml
-    keys:
-    - Cloud
-    - RAG
-    priorité: 2
-  - name: Confluent Blog
-    url: https://www.confluent.io/blog/feed/
-    keys:
-    - Cloud
-    - Ops
-    priorité: 2
-- name: Frameworks deep learning
-  color: '#7c3aed'
-  keywords:
-  - deep learning
-  - training
-  - neural network
-  - fine-tuning
-  - quantization
-  - optimization
-  sources:
   - name: PyTorch Releases
     url: https://github.com/pytorch/pytorch/releases.atom
     keys:
@@ -634,7 +372,7 @@ categories:
     - Deep Learning
     priorité: 2
   - name: Keras Blog
-    url: https://blog.keras.io/feeds/posts/default
+    url: https://github.com/keras-team/keras/releases.atom
     keys:
     - Deep Learning
     priorité: 2
@@ -675,16 +413,66 @@ categories:
     - LLM
     - Ops
     priorité: 3
-- name: Moteurs d’inférence & serving
-  color: '#ea580c'
-  keywords:
-  - inference
-  - serving
-  - runtime
-  - quantization
-  - throughput
-  - latency
-  sources:
+  - name: RAGFlow Releases
+    url: https://github.com/infiniflow/ragflow/releases.atom
+    keys:
+    - RAG
+    - Orchestration
+    priorité: 3
+  - name: Unstructured Blog
+    url: https://github.com/Unstructured-IO/unstructured/releases.atom
+    keys:
+    - RAG
+    priorité: 3
+  - name: Weaviate Blog
+    url: https://weaviate.io/blog/rss.xml
+    keys:
+    - RAG
+    - recherche
+    priorité: 2
+  - name: Qdrant Blog
+    url: https://github.com/qdrant/qdrant/releases.atom
+    keys:
+    - RAG
+    - recherche
+    priorité: 1
+  - name: Milvus Blog
+    url: https://github.com/milvus-io/milvus/releases.atom
+    keys:
+    - RAG
+    - recherche
+    priorité: 1
+  - name: pgvector Releases
+    url: https://github.com/pgvector/pgvector/releases.atom
+    keys:
+    - RAG
+    priorité: 1
+  - name: Elasticsearch Blog
+    url: https://www.elastic.co/blog/feed
+    keys:
+    - recherche
+    - RAG
+    - Monitoring
+    priorité: 2
+  - name: OpenSearch Blog
+    url: https://opensearch.org/blog/feed/
+    keys:
+    - recherche
+    - RAG
+    - Monitoring
+    priorité: 2
+  - name: MongoDB Blog
+    url: https://www.mongodb.com/blog/rss.xml
+    keys:
+    - Cloud
+    - RAG
+    priorité: 2
+  - name: Confluent Blog
+    url: https://github.com/confluentinc/confluent-kafka-python/releases.atom
+    keys:
+    - Cloud
+    - Ops
+    priorité: 2
   - name: vLLM Releases
     url: https://github.com/vllm-project/vllm/releases.atom
     keys:
@@ -732,13 +520,13 @@ categories:
     - Ops
     priorité: 3
   - name: BentoML Blog
-    url: https://www.bentoml.com/blog/rss.xml
+    url: https://github.com/bentoml/BentoML/releases.atom
     keys:
     - LLM
     - Ops
     priorité: 3
   - name: KServe Blog
-    url: https://kserve.github.io/website/latest/blog/index.xml
+    url: https://github.com/kserve/kserve/releases.atom
     keys:
     - Ops
     - Cloud
@@ -749,122 +537,8 @@ categories:
     - LLM
     - Ops
     priorité: 1
-- name: Ops, plateformes & monitoring
-  color: '#0891b2'
-  keywords:
-  - MLOps
-  - observability
-  - evaluation
-  - experiment tracking
-  - deployment
-  - Kubernetes
-  sources:
-  - name: MLflow Releases
-    url: https://github.com/mlflow/mlflow/releases.atom
-    keys:
-    - Ops
-    - Monitoring
-    priorité: 2
-  - name: ClearML Releases
-    url: https://github.com/clearml/clearml/releases.atom
-    keys:
-    - Ops
-    - Monitoring
-    priorité: 2
-  - name: Kubeflow Blog
-    url: https://blog.kubeflow.org/feed.xml
-    keys:
-    - Ops
-    - Orchestration
-    - Cloud
-    priorité: 3
-  - name: OpenShift AI
-    url: https://developers.redhat.com/products/red-hat-openshift-ai/blog/feed
-    keys:
-    - Ops
-    - Orchestration
-    - Cloud
-    priorité: 2
-  - name: Anyscale Blog
-    url: https://www.anyscale.com/blog/rss.xml
-    keys:
-    - Ops
-    - Orchestration
-    - Cloud
-    priorité: 2
-  - name: Weights & Biases Fully Connected
-    url: https://wandb.ai/fully-connected/rss.xml
-    keys:
-    - Ops
-    - Monitoring
-    priorité: 1
-  - name: Arize AI Blog
-    url: https://arize.com/blog/rss.xml
-    keys:
-    - Monitoring
-    - Ops
-    priorité: 3
-  - name: Langfuse Releases
-    url: https://github.com/langfuse/langfuse/releases.atom
-    keys:
-    - Monitoring
-    - LLM
-    - IA Agentique
-    priorité: 1
-- name: Cloud et datalakes
-  color: '#0369a1'
-  keywords:
-  - Cloud
-  - enterprise AI
-  - data platform
-  - governance
-  - data engineering
-  sources:
-  - name: AWS Machine Learning Blog
-    url: https://aws.amazon.com/blogs/machine-learning/feed/
-    keys:
-    - Cloud
-    - LLM
-    - Ops
-    priorité: 2
-  - name: Azure AI & Machine Learning Blog
-    url: https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/bg-p/AzureAIBlog/rss
-    keys:
-    - Cloud
-    - LLM
-    - Ops
-    priorité: 2
-  - name: Google Cloud AI Blog
-    url: https://cloud.google.com/blog/products/ai-machine-learning/rss
-    keys:
-    - Cloud
-    - LLM
-    - Ops
-    priorité: 2
-  - name: Databricks Blog
-    url: https://www.databricks.com/blog/feed
-    keys:
-    - Cloud
-    - Ops
-    - RAG
-    priorité: 3
-  - name: Snowflake Blog
-    url: https://www.snowflake.com/blog/feed/
-    keys:
-    - Cloud
-    - Ops
-    - RAG
-    priorité: 3
 - name: HPC
   color: '#d97706'
-  keywords:
-  - GPU
-  - HPC
-  - CUDA
-  - ROCm
-  - distributed training
-  - Slurm
-  - accelerator
   sources:
   - name: NVIDIA Newsroom
     url: https://nvidianews.nvidia.com/rss
@@ -873,13 +547,13 @@ categories:
     - Deep Learning
     priorité: 1
   - name: AMD Blog
-    url: https://www.amd.com/en/blogs/rss.xml
+    url: https://gpuopen.com/feed.xml
     keys:
     - HPC
     - Deep Learning
     priorité: 3
   - name: AMD ROCm Blog
-    url: https://rocm.blogs.amd.com/feed.xml
+    url: https://rocm.blogs.amd.com/blog/atom.xml
     keys:
     - HPC
     - Deep Learning
@@ -926,75 +600,318 @@ categories:
     - HPC
     - Newsletter
     priorité: 3
-- name: Presse & newsletters
-  color: '#475569'
-  keywords:
-  - generative AI
-  - AI industry
-  - model
-  - agent
-  - AI policy
-  - machine learning
+- name: Ops, Cloud et plateformes
+  color: '#0891b2'
   sources:
-  - name: The Neuron
-    url: https://www.theneuron.ai/newsletter/feed/
+  - name: MLflow Releases
+    url: https://github.com/mlflow/mlflow/releases.atom
     keys:
-    - Newsletter
-    - LLM
-    - IA Agentique
-    priorité: 1
-  - name: Towards Data Science
-    url: https://towardsdatascience.com/feed
+    - Ops
+    - Monitoring
+    priorité: 2
+  - name: ClearML Releases
+    url: https://github.com/clearml/clearml/releases.atom
     keys:
-    - Newsletter
-    - recherche
-    - Deep Learning
-    priorité: 1
-  - name: MIT Technology Review — AI
-    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    - Ops
+    - Monitoring
+    priorité: 2
+  - name: Kubeflow Blog
+    url: https://blog.kubeflow.org/feed.xml
     keys:
-    - Newsletter
-    - Politique
-    - recherche
-    priorité: 3
-  - name: VentureBeat AI
-    url: https://venturebeat.com/category/ai/feed/
-    keys:
-    - Newsletter
-    - LLM
+    - Ops
+    - Orchestration
     - Cloud
     priorité: 3
-  - name: MarkTechPost
-    url: https://www.marktechpost.com/feed/
+  - name: OpenShift AI
+    url: https://github.com/opendatahub-io/opendatahub-operator/releases.atom
     keys:
-    - Newsletter
-    - recherche
-    - LLM
+    - Ops
+    - Orchestration
+    - Cloud
+    priorité: 2
+  - name: Anyscale Blog
+    url: https://www.anyscale.com/blog/rss.xml
+    keys:
+    - Ops
+    - Orchestration
+    - Cloud
+    priorité: 2
+  - name: Weights & Biases Fully Connected
+    url: https://wandb.ai/fully-connected/rss.xml
+    keys:
+    - Ops
+    - Monitoring
+    priorité: 1
+  - name: Arize AI Blog
+    url: https://github.com/Arize-ai/phoenix/releases.atom
+    keys:
+    - Monitoring
+    - Ops
     priorité: 3
-  - name: The Decoder
-    url: https://the-decoder.com/feed/
+  - name: Langfuse Releases
+    url: https://github.com/langfuse/langfuse/releases.atom
     keys:
-    - Newsletter
-    - LLM
-    priorité: 3
-  - name: Last Week in AI
-    url: https://lastweekin.ai/feed
-    keys:
-    - Newsletter
-    - Politique
-    - LLM
-    priorité: 3
-  - name: Import AI
-    url: https://importai.substack.com/feed
-    keys:
-    - Newsletter
-    - recherche
-    - Politique
-    priorité: 3
-  - name: Ben's Bites
-    url: https://www.bensbites.co/feed
-    keys:
-    - Newsletter
+    - Monitoring
     - LLM
     - IA Agentique
+    priorité: 1
+  - name: AWS Machine Learning Blog
+    url: https://aws.amazon.com/blogs/machine-learning/feed/
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Azure AI & Machine Learning Blog
+    url: https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/bg-p/AzureAIBlog/rss
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Google Cloud AI Blog
+    url: https://cloud.google.com/blog/products/ai-machine-learning/rss
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Databricks Blog
+    url: https://www.databricks.com/feed
+    keys:
+    - Cloud
+    - Ops
+    - RAG
+    priorité: 3
+  - name: Snowflake Blog
+    url: https://github.com/snowflakedb/snowpark-python/releases.atom
+    keys:
+    - Cloud
+    - Ops
+    - RAG
+    priorité: 3
+- name: Sécurité, guardrails et évaluation
+  color: '#dc2626'
+  sources:
+  - name: Microsoft PyRIT Releases
+    url: https://github.com/Azure/PyRIT/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - recherche
+    priorité: 3
+  - name: NVIDIA garak Releases
+    url: https://github.com/NVIDIA/garak/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - Monitoring
+    priorité: 3
+  - name: UK AISI Inspect AI Releases
+    url: https://github.com/UKGovernmentBEIS/inspect_ai/releases.atom
+    keys:
+    - LLM
+    - Politique
+    - Cybersécurité
+    - recherche
+    priorité: 2
+  - name: NeMo Guardrails Releases
+    url: https://github.com/NVIDIA/NeMo-Guardrails/releases.atom
+    keys:
+    - LLM
+    - Orchestration
+    - Cybersécurité
+    priorité: 1
+  - name: Giskard Releases
+    url: https://github.com/Giskard-AI/giskard/releases.atom
+    keys:
+    - LLM
+    - RAG
+    - Monitoring
+    - Cybersécurité
+    priorité: 3
+  - name: Promptfoo Releases
+    url: https://github.com/promptfoo/promptfoo/releases.atom
+    keys:
+    - LLM
+    - Monitoring
+    - Cybersécurité
+    priorité: 1
+  - name: LLM Guard Releases
+    url: https://github.com/protectai/llm-guard/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - Ops
+    priorité: 1
+  - name: Guardrails AI Releases
+    url: https://github.com/guardrails-ai/guardrails/releases.atom
+    keys:
+    - LLM
+    - Orchestration
+    - Cybersécurité
+    priorité: 1
+  - name: OWASP GenAI Security Project
+    url: https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Cybersécurité
+    priorité: 1
+- name: Appels à projets et financements
+  color: '#059669'
+  sources:
+  - name: Bpifrance
+    url: https://www.bpifrance.fr/nos-appels-a-projets-concours
+    keys:
+    - Appels à projets
+    - Politique
+    - Cloud
+    enabled: false
+    priorité: 1
+  - name: ANR
+    url: https://anr.fr/fr/appels/
+    keys:
+    - recherche
+    - Appels à projets
+    - Cybersécurité
+    enabled: false
+    priorité: 1
+  - name: HaDEA
+    url: https://hadea.ec.europa.eu/node/1/rss_en
+    keys:
+    - Appels à projets
+    - Cloud
+    - Politique
+    priorité: 2
+    enabled: false
+  - name: RAISE
+    url: https://research-and-innovation.ec.europa.eu/strategy/strategy-research-and-innovation/our-digital-future/european-ai-science-strategy/raise-resource-ai-science-europe_en
+    keys:
+    - recherche
+    - HPC
+    - Appels à projets
+    enabled: false
+    priorité: 2
+  - name: EuroHPC JU
+    url: https://eurohpc-ju.europa.eu/node/1/rss_en
+    keys:
+    - HPC
+    - Appels à projets
+    - Politique
+    priorité: 1
+    enabled: false
+  - name: EU Funding & Tenders, Horizon Europe
+    url: https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/programmes/horizon
+    keys:
+    - recherche
+    - Appels à projets
+    - Politique
+    enabled: false
+    priorité: 1
+  - name: US NSF — Funding opportunities
+    url: https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml
+    keys:
+    - recherche
+    - Appels à projets
+    priorité: 1
+  - name: DARPA
+    url: https://www.darpa.mil/work-with-us/opportunities
+    keys:
+    - recherche
+    - Cybersécurité
+    - Appels à projets
+    enabled: false
+    priorité: 2
+- name: Institutions publiques et politiques
+  color: '#be123c'
+  sources:
+  - name: France Numérique
+    url: https://www.francenum.gouv.fr/flux-rss-principal
+    keys:
+    - Politique
+    - Cloud
+    priorité: 2
+  - name: Commission européene de la stratégie numérique
+    url: https://digital-strategy.ec.europa.eu/en/rss.xml
+    keys:
+    - Politique
+    - Cloud
+    priorité: 2
+  - name: US NIST Artificial Intelligence
+    url: https://www.nist.gov/news-events/artificial-intelligence/rss.xml
+    keys:
+    - Politique
+    - recherche
+    priorité: 2
+  - name: Chine — Ministère des Affaires étrangères
+    url: https://cs.mfa.gov.cn/gyls/lsgz/lqbb/rss_57447.xml
+    keys:
+    - Politique
+    priorité: 3
+  - name: OECD AI
+    url: https://oecd.ai/en/rss
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+    enabled: false
+  - name: Partnership on AI
+    url: https://partnershiponai.org/feed/
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+  - name: Center for Security and Emerging Technology
+    url: https://cset.georgetown.edu/feed/
+    keys:
+    - Politique
+    - recherche
+    priorité: 2
+  - name: AI Now Institute
+    url: https://ainowinstitute.org/feed
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+  - name: ANSSI
+    url: https://cyber.gouv.fr/actualites/rss/
+    keys:
+    - Politique
+    - Cybersécurité
+    - IA Agentique
+    priorité: 1
+  - name: CERT-FR
+    url: https://www.cert.ssi.gouv.fr/feed/
+    keys:
+    - Cybersécurité
+    - Monitoring
+    priorité: 1
+  - name: CNIL
+    url: https://www.cnil.fr/fr/rss.xml
+    keys:
+    - Politique
+    - Cybersécurité
+    - IA Agentique
+    priorité: 1
+  - name: ENISA News
+    url: https://www.enisa.europa.eu/news/enisa-news/RSS
+    keys:
+    - Politique
+    - Cybersécurité
+    priorité: 3
+    enabled: false
+  - name: UK AI Security Institute
+    url: https://www.gov.uk/search/news-and-communications.atom?organisations%5B%5D=ai-security-institute
+    keys:
+    - recherche
+    - Politique
+    - Cybersécurité
+    priorité: 3
+  - name: UK NCSC — Artificial Intelligence
+    url: https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml
+    keys:
+    - Politique
+    - IA Agentique
+    - Cybersécurité
     priorité: 3

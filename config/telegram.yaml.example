@@ -1,0 +1,5 @@
+# Utilisé uniquement après la génération du rapport data/summary.md.
+enabled: false
+bot_token_env: "TELEGRAM_BOT_TOKEN"
+chat_id: ""
+max_message_chars: 3900

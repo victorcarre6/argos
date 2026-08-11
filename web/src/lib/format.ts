@@ -15,6 +15,16 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(digits)} Mo`;
 }
 
+export function formatElapsed(value: string | null): string {
+  if (!value) return "—";
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return "—";
+  const totalMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 export function matchesQuery(article: Article, query: string): boolean {
   const searchable =
     `${article.title} ${article.summary} ${article.tags.join(" ")}`.toLowerCase();

@@ -241,8 +241,8 @@ export function SourcesView({
             <SectionTitle>Sources de veille</SectionTitle>
             <p className="text-sm text-muted-foreground">
               {config.categories.length} catégories · {activeSources}/
-              {totalSources} sources actives · configuration enregistrée dans{" "}
-              <code>config/sources.yml</code>.
+              {totalSources} sources actives · {Object.keys(config.tags).length}{" "}
+              tags
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -299,7 +299,7 @@ export function SourcesView({
             </button>
             {open && (
               <div className="border-t border-border bg-muted/20 p-4">
-                <div className="grid gap-3 rounded-lg border border-border bg-background p-3 md:grid-cols-[80px_minmax(220px,1fr)_2fr]">
+                <div className="grid gap-3 rounded-lg border border-border bg-background p-3 md:grid-cols-[80px_minmax(220px,1fr)]">
                   <label className="text-xs font-medium text-muted-foreground">
                     Couleur
                     <input
@@ -323,22 +323,6 @@ export function SourcesView({
                         })
                       }
                       className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-sm font-medium"
-                    />
-                  </label>
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Mots-clés de scoring
-                    <input
-                      value={(category.keywords ?? []).join(", ")}
-                      onChange={(event) =>
-                        updateCategory(categoryIndex, {
-                          keywords: event.target.value
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean),
-                        })
-                      }
-                      placeholder="agent, security, funding…"
-                      className="mt-1 h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
                     />
                   </label>
                 </div>
@@ -371,7 +355,7 @@ export function SourcesView({
                         {
                           name: "Nouvelle source",
                           url: "https://",
-                          keys: [],
+                          keys: ["recherche"],
                           priorité: 3,
                         },
                       ],
@@ -397,7 +381,6 @@ export function SourcesView({
               {
                 name: "Nouvelle catégorie",
                 color: "#6d5dfc",
-                keywords: [],
                 sources: [],
               },
             ],

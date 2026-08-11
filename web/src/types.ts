@@ -1,10 +1,9 @@
 export type Tab =
+  | "home"
   | "watch"
-  | "digest"
   | "health"
-  | "viz"
   | "assistant"
-  | "sources";
+  | "config";
 export type Priority = 1 | 2 | 3;
 
 export type Source = {
@@ -19,12 +18,13 @@ export type Source = {
 export type Category = {
   name: string;
   color?: string;
-  keywords?: string[];
   sources: Source[];
 };
 
 export type Config = {
   app?: { name?: string; description?: string };
+  collection?: { max_age_days?: number };
+  tags: Record<string, string[]>;
   categories: Category[];
 };
 
@@ -41,12 +41,25 @@ export type Article = {
   tags: string[];
   keys: string[];
   priorité: Priority;
+  view: boolean;
+  candidate: "good" | "bad" | null;
 };
 
 export type Stats = {
   total: number;
   sources: number;
+  collected_sources: number;
+  new_signals: number | null;
+  priority_one_recent: number;
   last_collection: string | null;
+  last_collection_sources: number | null;
+  last_collection_failed_sources: number | null;
+  last_collection_successful_sources: number | null;
+};
+
+export type SummaryDocument = {
+  content: string;
+  updated_at: string | null;
 };
 
 export type AsyncState = {
@@ -55,12 +68,28 @@ export type AsyncState = {
   finished_at: string | null;
   result: {
     sources: number;
+    failed_sources?: number;
     articles: number;
     new?: number;
     duplicates?: number;
+    summary?: {
+      generated: boolean;
+      signals: number;
+      sections: number;
+      planning_mode: "llm" | "fallback" | null;
+      path: string;
+    } | null;
     errors: string[];
   } | null;
   error: string | null;
+  progress: {
+    stage: "idle" | "fetch" | "storage" | "embedding" | "summary" | "telegram";
+    label: string;
+    percent: number;
+    completed: number;
+    total: number;
+    failed: number;
+  };
 };
 
 export type SourceHealth = {
@@ -77,6 +106,16 @@ export type SourceHealth = {
   total_failures: number;
 };
 
+export type CollectionRun = {
+  id: number;
+  trigger: "manual" | "systemd";
+  started_at: string;
+  finished_at: string | null;
+  status: "running" | "completed" | "completed_with_errors" | "failed";
+  result: AsyncState["result"];
+  error: string | null;
+};
+
 export type AssistantStatus = {
   available: boolean;
   url: string;
@@ -84,42 +123,37 @@ export type AssistantStatus = {
   error: string | null;
 };
 
+export type TelegramStatus = {
+  enabled: boolean;
+  ready: boolean;
+  token_configured: boolean;
+  chat_configured: boolean;
+  max_message_chars: number;
+  report_pending: boolean;
+  last_sent_at: string | null;
+};
+
+export type AutomationStatus = {
+  configured: boolean;
+  calendar: string | null;
+  times: string[];
+  persistent: boolean;
+};
+
 export type AppHealth = {
   uptime_seconds: number;
-  database_bytes: number;
-  articles: number;
-  duplicates: number;
+  storage_bytes: number;
+  signals_total: number;
+  signals_p1: number;
   sources_healthy: number;
   sources_failing: number;
   assistant: AssistantStatus;
-};
-
-export type Cluster = {
-  id: string;
-  name: string;
-  auto_name: string;
-  size: number;
-  titles: string[];
-};
-
-export type ClusterResponse = {
-  clusters: Cluster[];
-  state: AsyncState;
-};
-
-export type HeatCell = { x: string; y: string; value: number };
-
-export type SemanticPoint = {
-  id: string;
-  title: string;
-  summary: string;
-  url: string;
-  source: string;
-  category: string;
-  score: number;
-  cluster_id: string | null;
-  cluster_name: string | null;
-  color: string;
-  x: number;
-  y: number;
+  telegram: TelegramStatus;
+  automation: AutomationStatus;
+  rag_index: {
+    pending: boolean;
+    last_attempt_at: string | null;
+    last_success_at: string | null;
+    last_error: string | null;
+  };
 };

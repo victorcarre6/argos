@@ -5,12 +5,13 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
  * Button
  * ------------------------------------------------------------------------ */
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "success" | "ghost";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-brand text-brand-foreground hover:opacity-90",
   secondary:
     "bg-secondary text-secondary-foreground hover:bg-accent border border-border",
+  success: "bg-success text-white hover:opacity-90",
   ghost: "bg-transparent text-foreground hover:bg-muted",
 };
 
@@ -62,6 +63,43 @@ export const Card = ({
 export const SectionTitle = ({ children }: { children: ReactNode }) => (
   <h3 className="mb-3 text-sm font-semibold text-foreground">{children}</h3>
 );
+
+export function TabBar<T extends string>({
+  items,
+  value,
+  onChange,
+  className,
+}: {
+  items: ReadonlyArray<{ value: T; label: string; icon?: ReactNode }>;
+  value: T;
+  onChange: (value: T) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex w-fit max-w-full gap-1 overflow-x-auto rounded-lg bg-secondary p-1",
+        className,
+      )}
+    >
+      {items.map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          onClick={() => onChange(item.value)}
+          className={cn(
+            "flex h-8 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+            value === item.value &&
+              "bg-background text-foreground shadow-sm hover:text-foreground",
+          )}
+        >
+          {item.icon}
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Tiny uppercase caption. */
 export const Label = ({ children }: { children: ReactNode }) => (

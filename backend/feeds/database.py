@@ -27,15 +27,20 @@ def initialize() -> None:
                 normalized_url TEXT, source TEXT NOT NULL, category TEXT NOT NULL,
                 summary TEXT, published_at TEXT, collected_at TEXT NOT NULL,
                 first_seen_at TEXT, score INTEGER NOT NULL, tags TEXT NOT NULL,
-                content_fingerprint TEXT, duplicate_of TEXT
+                content_fingerprint TEXT, duplicate_of TEXT,
+                view INTEGER NOT NULL DEFAULT 1
             )""")
         for name, definition in (
             ("normalized_url", "TEXT"),
             ("first_seen_at", "TEXT"),
             ("content_fingerprint", "TEXT"),
             ("duplicate_of", "TEXT"),
+            ("view", "INTEGER NOT NULL DEFAULT 1"),
         ):
             _ensure_article_column(connection, name, definition)
+        connection.execute(
+            "UPDATE articles SET first_seen_at = collected_at WHERE first_seen_at IS NULL"
+        )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_articles_published ON articles(published_at DESC)"
         )
@@ -53,15 +58,24 @@ def initialize() -> None:
                 total_successes INTEGER NOT NULL DEFAULT 0,
                 total_failures INTEGER NOT NULL DEFAULT 0
             )""")
-        connection.execute("""CREATE TABLE IF NOT EXISTS embeddings (
-                article_id TEXT PRIMARY KEY, model TEXT NOT NULL,
-                content_hash TEXT NOT NULL, vector_json TEXT NOT NULL,
+        connection.execute("""CREATE TABLE IF NOT EXISTS rag_index_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                pending INTEGER NOT NULL DEFAULT 0,
+                last_attempt_at TEXT, last_success_at TEXT, last_error TEXT
+            )""")
+        connection.execute(
+            "INSERT OR IGNORE INTO rag_index_state (id, pending) VALUES (1, 0)"
+        )
+        connection.execute("""CREATE TABLE IF NOT EXISTS collection_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trigger TEXT NOT NULL, started_at TEXT NOT NULL,
+                finished_at TEXT, status TEXT NOT NULL,
+                result_json TEXT, error TEXT
+            )""")
+        connection.execute("""CREATE TABLE IF NOT EXISTS signal_feedback (
+                article_id TEXT PRIMARY KEY,
+                candidate TEXT NOT NULL CHECK (candidate IN ('good','bad')),
+                snapshot_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
-            )""")
-        connection.execute("""CREATE TABLE IF NOT EXISTS clusters (
-                id TEXT PRIMARY KEY, name TEXT NOT NULL, auto_name TEXT NOT NULL,
-                size INTEGER NOT NULL, updated_at TEXT NOT NULL
-            )""")
-        connection.execute("""CREATE TABLE IF NOT EXISTS article_clusters (
-                article_id TEXT PRIMARY KEY, cluster_id TEXT NOT NULL
             )""")

@@ -2,7 +2,6 @@
 
 from flask import Flask
 
-from clustering.routes import blueprint as clustering_blueprint
 from feeds.articles import blueprint as articles_blueprint
 from feeds.database import initialize
 from feeds.routes import blueprint as fetch_blueprint
@@ -18,7 +17,6 @@ def create_app() -> Flask:
         configuration_blueprint,
         articles_blueprint,
         fetch_blueprint,
-        clustering_blueprint,
         rag_blueprint,
     ):
         application.register_blueprint(blueprint)

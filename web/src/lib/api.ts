@@ -10,7 +10,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function jsonRequest(
-  method: "POST" | "PUT",
+  method: "POST" | "PUT" | "PATCH",
   body: unknown,
 ): RequestInit {
   return {

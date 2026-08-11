@@ -1,8 +1,8 @@
 [Unit]
-Description=Schedule Argos RSS collection
+Description=Schedule Argos RSS collection and RAG indexing
 
 [Timer]
-OnCalendar=hourly
+OnCalendar=*-*-* 10,14,18:00:00
 Persistent=true
 Unit=argos-collect.service
 
