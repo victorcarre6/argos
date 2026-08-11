@@ -1,247 +1,917 @@
 app:
-  name: "Argos"
-  description: "Catalogue RSS pour IA générative, agents, RAG, deep learning, MLOps et HPC"
+  name: Argos
+  description: Moniteur RSS pour IA agentique, RAG, deep learning, MLOps et HPC
 storage:
-  retention_days: 180  # Purge automatique après chaque collecte
-
+  retention_days: 30
+collection:
+  max_age_days: 7
+tags:
+  agents: [agent, agents, agentic, multi-agent, tool calling]
+  rag: [RAG, retrieval augmented generation, retrieval-augmented generation]
+  llm: [LLM, large language model, language model, foundation model]
+  modeles: [model release, open weight, open-weight, multimodal]
+  entrainement: [training, distributed training, deep learning, neural network]
+  fine_tuning: [fine-tuning, fine tuning, finetuning]
+  inference: [inference, serving, runtime, throughput, latency]
+  embeddings: [embedding, embeddings, vector database, vector store]
+  recherche: [research, paper, benchmark, search]
+  evaluation: [Evaluation, Model Evaluation, Evals, Red Teaming]
+  securite: [AI security, LLM security, prompt injection, guardrails, cybersecurity]
+  observabilite: [observability, monitoring, experiment tracking, tracing]
+  deploiement: [deployment, Kubernetes, orchestration, workflow, MLOps]
+  cloud: [cloud, AI platform, data platform, enterprise AI]
+  hpc: [GPU, CUDA, ROCm, Slurm, accelerator]
+  reglementation: [AI policy, regulation, governance, standards, public sector]
+  financement: [call for proposals, funding, grant, France 2030, Horizon Europe, Digital Europe]
+  optimisation: [quantization, optimization, reranking, chunking]
 categories:
-  - name: "Recherche fondamentale & publications"
-    color: "#6d5dfc"
-    keywords: ["foundation model", "language model", "multimodal", "diffusion", "reasoning", "deep learning", "transformer"]
-    sources:
-      - name: "arXiv — Artificial Intelligence"
-        url: "http://export.arxiv.org/rss/cs.AI"
-      - name: "arXiv — Machine Learning"
-        url: "http://export.arxiv.org/rss/cs.LG"
-      - name: "arXiv — Computation and Language"
-        url: "http://export.arxiv.org/rss/cs.CL"
-      - name: "arXiv — Computer Vision"
-        url: "http://export.arxiv.org/rss/cs.CV"
-      - name: "arXiv — Robotics"
-        url: "http://export.arxiv.org/rss/cs.RO"
-      - name: "arXiv — Statistics / Machine Learning"
-        url: "http://export.arxiv.org/rss/stat.ML"
-      - name: "Papers with Code — Latest"
-        url: "https://paperswithcode.com/feeds/latest"
-      - name: "The Gradient"
-        url: "https://thegradient.pub/rss/"
-      - name: "MIT News — Machine Learning"
-        url: "https://news.mit.edu/rss/topic/machine-learning"
-      - name: "Stanford HAI News"
-        url: "https://hai.stanford.edu/news/rss.xml"
-
-  - name: "Laboratoires, modèles & fournisseurs"
-    color: "#2563eb"
-    keywords: ["LLM", "model release", "open weight", "inference", "fine-tuning", "benchmark", "safety"]
-    sources:
-      - name: "Hugging Face Blog"
-        url: "https://huggingface.co/blog/feed.xml"
-      - name: "OpenAI News"
-        url: "https://openai.com/news/rss.xml"
-      - name: "Google DeepMind Blog"
-        url: "https://deepmind.google/blog/feed/basic/"
-      - name: "Google AI Blog"
-        url: "https://blog.google/technology/ai/rss/"
-      - name: "Mistral AI News"
-        url: "https://mistral.ai/news/feed/"
-      - name: "Cohere Blog"
-        url: "https://cohere.com/blog/rss.xml"
-      - name: "Microsoft Research"
-        url: "https://www.microsoft.com/en-us/research/feed/"
-      - name: "Meta AI Blog"
-        url: "https://ai.meta.com/blog/rss/"
-      - name: "Allen Institute for AI"
-        url: "https://allenai.org/blog/rss.xml"
-      - name: "EleutherAI Blog"
-        url: "https://blog.eleuther.ai/rss/"
-
-  - name: "IA agentique, MCP & orchestration"
-    color: "#0c9d78"
-    keywords: ["agent", "agentic", "tool calling", "MCP", "orchestration", "multi-agent", "workflow", "evaluation"]
-    sources:
-      - name: "LangChain Blog"
-        url: "https://blog.langchain.com/rss/"
-      - name: "LangChain Releases"
-        url: "https://github.com/langchain-ai/langchain/releases.atom"
-      - name: "LangGraph Releases"
-        url: "https://github.com/langchain-ai/langgraph/releases.atom"
-      - name: "Model Context Protocol Releases"
-        url: "https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom"
-      - name: "Microsoft Semantic Kernel Blog"
-        url: "https://devblogs.microsoft.com/semantic-kernel/feed/"
-      - name: "AutoGen Releases"
-        url: "https://github.com/microsoft/autogen/releases.atom"
-      - name: "CrewAI Releases"
-        url: "https://github.com/crewAIInc/crewAI/releases.atom"
-      - name: "Haystack Blog"
-        url: "https://haystack.deepset.ai/blog/rss.xml"
-      - name: "n8n Blog"
-        url: "https://blog.n8n.io/rss/"
-
-  - name: "RAG, recherche & bases vectorielles"
-    color: "#b466e8"
-    keywords: ["RAG", "retrieval", "embedding", "vector database", "reranking", "knowledge graph", "chunking", "context"]
-    sources:
-      - name: "Weaviate Blog"
-        url: "https://weaviate.io/blog/rss.xml"
-      - name: "Qdrant Blog"
-        url: "https://qdrant.tech/blog/rss.xml"
-      - name: "Milvus Blog"
-        url: "https://milvus.io/blog/rss.xml"
-      - name: "Elasticsearch Blog"
-        url: "https://www.elastic.co/blog/feed"
-      - name: "OpenSearch Blog"
-        url: "https://opensearch.org/blog/feed/"
-      - name: "pgvector Releases"
-        url: "https://github.com/pgvector/pgvector/releases.atom"
-      - name: "RAGFlow Releases"
-        url: "https://github.com/infiniflow/ragflow/releases.atom"
-      - name: "Unstructured Blog"
-        url: "https://www.unstructured.io/blog/rss.xml"
-      - name: "LlamaIndex Releases"
-        url: "https://github.com/run-llama/llama_index/releases.atom"
-
-  - name: "Deep learning & frameworks"
-    color: "#7c3aed"
-    keywords: ["deep learning", "training", "neural network", "PyTorch", "TensorFlow", "JAX", "optimization", "quantization"]
-    sources:
-      - name: "TensorFlow Blog"
-        url: "https://blog.tensorflow.org/feeds/posts/default"
-      - name: "Keras Blog"
-        url: "https://blog.keras.io/feeds/posts/default"
-      - name: "PyTorch Releases"
-        url: "https://github.com/pytorch/pytorch/releases.atom"
-      - name: "JAX Releases"
-        url: "https://github.com/jax-ml/jax/releases.atom"
-      - name: "Lightning AI Blog"
-        url: "https://lightning.ai/blog/rss.xml"
-      - name: "vLLM Releases"
-        url: "https://github.com/vllm-project/vllm/releases.atom"
-      - name: "Transformers Releases"
-        url: "https://github.com/huggingface/transformers/releases.atom"
-      - name: "ONNX Releases"
-        url: "https://github.com/onnx/onnx/releases.atom"
-
-  - name: "MLOps, évaluation & serving"
-    color: "#0891b2"
-    keywords: ["MLOps", "model serving", "observability", "evaluation", "experiment tracking", "deployment", "Kubernetes"]
-    sources:
-      - name: "MLflow Releases"
-        url: "https://github.com/mlflow/mlflow/releases.atom"
-      - name: "Kubeflow Blog"
-        url: "https://blog.kubeflow.org/feed.xml"
-      - name: "KServe Blog"
-        url: "https://kserve.github.io/website/latest/blog/index.xml"
-      - name: "BentoML Blog"
-        url: "https://www.bentoml.com/blog/rss.xml"
-      - name: "Anyscale Blog"
-        url: "https://www.anyscale.com/blog/rss.xml"
-      - name: "Weights & Biases Fully Connected"
-        url: "https://wandb.ai/fully-connected/rss.xml"
-      - name: "Arize AI Blog"
-        url: "https://arize.com/blog/rss.xml"
-      - name: "Langfuse Releases"
-        url: "https://github.com/langfuse/langfuse/releases.atom"
-
-  - name: "Cloud, données & IA d'entreprise"
-    color: "#0369a1"
-    keywords: ["enterprise AI", "data platform", "data lakehouse", "cloud AI", "governance", "data engineering", "RAG"]
-    sources:
-      - name: "AWS Machine Learning Blog"
-        url: "https://aws.amazon.com/blogs/machine-learning/feed/"
-      - name: "Azure AI & Machine Learning Blog"
-        url: "https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/bg-p/AzureAIBlog/rss"
-      - name: "Google Cloud AI Blog"
-        url: "https://cloud.google.com/blog/products/ai-machine-learning/rss"
-      - name: "Databricks Blog"
-        url: "https://www.databricks.com/blog/feed"
-      - name: "Snowflake Blog"
-        url: "https://www.snowflake.com/blog/feed/"
-      - name: "MongoDB Blog"
-        url: "https://www.mongodb.com/blog/rss.xml"
-      - name: "Confluent Blog"
-        url: "https://www.confluent.io/blog/feed/"
-
-  - name: "GPU, calcul distribué & HPC"
-    color: "#d97706"
-    keywords: ["GPU", "HPC", "CUDA", "ROCm", "distributed training", "inference", "cluster", "Slurm", "accelerator", "AI factory"]
-    sources:
-      - name: "NVIDIA Technical Blog"
-        url: "https://developer.nvidia.com/blog/feed/"
-      - name: "HPCwire"
-        url: "https://www.hpcwire.com/feed/"
-      - name: "MLPerf News"
-        url: "https://mlcommons.org/feed/"
-      - name: "NVIDIA Newsroom RSS"
-        url: "https://nvidianews.nvidia.com/rss"
-      - name: "AMD Blog"
-        url: "https://www.amd.com/en/blogs/rss.xml"
-      - name: "AMD ROCm Blog"
-        url: "https://rocm.blogs.amd.com/feed.xml"
-      - name: "TOP500 News"
-        url: "https://www.top500.org/news/feed/"
-      - name: "The Next Platform"
-        url: "https://www.nextplatform.com/feed/"
-      - name: "ServeTheHome"
-        url: "https://www.servethehome.com/feed/"
-      - name: "OpenUCX Releases"
-        url: "https://github.com/openucx/ucx/releases.atom"
-      - name: "NCCL Releases"
-        url: "https://github.com/NVIDIA/nccl/releases.atom"
-
-  - name: "Open source, modèles ouverts & communautés"
-    color: "#16a34a"
-    keywords: ["open source", "open weight", "release", "checkpoint", "community", "benchmark", "dataset"]
-    sources:
-      - name: "Hugging Face Hub Releases"
-        url: "https://github.com/huggingface/huggingface_hub/releases.atom"
-      - name: "Ollama Releases"
-        url: "https://github.com/ollama/ollama/releases.atom"
-      - name: "llama.cpp Releases"
-        url: "https://github.com/ggml-org/llama.cpp/releases.atom"
-      - name: "Open WebUI Releases"
-        url: "https://github.com/open-webui/open-webui/releases.atom"
-      - name: "Mistral Inference Releases"
-        url: "https://github.com/mistralai/mistral-inference/releases.atom"
-      - name: "DeepSeek Releases"
-        url: "https://github.com/deepseek-ai/DeepSeek-V3/releases.atom"
-      - name: "EleutherAI GitHub Releases"
-        url: "https://github.com/EleutherAI/lm-evaluation-harness/releases.atom"
-
-  - name: "Éthique, sécurité, politique & gouvernance"
-    color: "#be123c"
-    keywords: ["AI safety", "alignment", "governance", "policy", "regulation", "responsible AI", "security", "risk"]
-    sources:
-      - name: "Partnership on AI"
-        url: "https://partnershiponai.org/feed/"
-      - name: "Center for Security and Emerging Technology"
-        url: "https://cset.georgetown.edu/feed/"
-      - name: "AI Now Institute"
-        url: "https://ainowinstitute.org/feed"
-      - name: "NIST Artificial Intelligence"
-        url: "https://www.nist.gov/feeds/artificial-intelligence.xml"
-      - name: "OECD AI"
-        url: "https://oecd.ai/en/rss"
-      - name: "Stanford HAI Policy"
-        url: "https://hai.stanford.edu/news/rss.xml"
-      - name: "Anthropic Research Mirror"
-        url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_research.xml"
-
-  - name: "Presse, analyses & newsletters"
-    color: "#475569"
-    keywords: ["generative AI", "AI industry", "model", "agent", "AI policy", "AI hardware", "machine learning"]
-    sources:
-      - name: "MIT Technology Review — AI"
-        url: "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
-      - name: "VentureBeat AI"
-        url: "https://venturebeat.com/category/ai/feed/"
-      - name: "MarkTechPost"
-        url: "https://www.marktechpost.com/feed/"
-      - name: "The Decoder"
-        url: "https://the-decoder.com/feed/"
-      - name: "Last Week in AI"
-        url: "https://lastweekin.ai/feed"
-      - name: "Import AI"
-        url: "https://importai.substack.com/feed"
-      - name: "Ben's Bites"
-        url: "https://www.bensbites.co/feed"
+- name: Aggrégateurs
+  color: '#6d5dfc'
+  sources:
+  - name: Hugging Face — Daily Papers
+    url: https://papers.takara.ai/api/feed
+    keys:
+    - recherche
+    - Newsletter
+    priorité: 2
+  - name: Papers with Code — Latest
+    url: https://paperswithcode.com/feeds/latest
+    keys:
+    - recherche
+    - Deep Learning
+    priorité: 2
+  - name: MIT News — Machine Learning
+    url: https://news.mit.edu/rss/topic/machine-learning
+    keys:
+    - recherche
+    - Deep Learning
+    priorité: 3
+  - name: Stanford HAI News
+    url: https://hai.stanford.edu/news/rss.xml
+    keys:
+    - recherche
+    - Politique
+    priorité: 3
+  - name: The Gradient
+    url: https://thegradient.pub/rss/
+    keys:
+    - recherche
+    - Deep Learning
+    priorité: 3
+  - name: The Neuron
+    url: https://www.theneuron.ai/newsletter/feed/
+    keys:
+    - Newsletter
+    - LLM
+    - IA Agentique
+    priorité: 1
+  - name: Towards Data Science
+    url: https://towardsdatascience.com/feed
+    keys:
+    - Newsletter
+    - recherche
+    - Deep Learning
+    priorité: 1
+  - name: MIT Technology Review — AI
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    keys:
+    - Newsletter
+    - Politique
+    - recherche
+    priorité: 3
+  - name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/feed/
+    keys:
+    - Newsletter
+    - LLM
+    - Cloud
+    priorité: 3
+  - name: MarkTechPost
+    url: https://www.marktechpost.com/feed/
+    keys:
+    - Newsletter
+    - recherche
+    - LLM
+    priorité: 3
+  - name: The Decoder
+    url: https://the-decoder.com/feed/
+    keys:
+    - Newsletter
+    - LLM
+    priorité: 3
+  - name: Last Week in AI
+    url: https://lastweekin.ai/feed
+    keys:
+    - Newsletter
+    - Politique
+    - LLM
+    priorité: 3
+  - name: Import AI
+    url: https://importai.substack.com/feed
+    keys:
+    - Newsletter
+    - recherche
+    - Politique
+    priorité: 3
+  - name: Ben's Bites
+    url: https://www.bensbites.com/feed
+    keys:
+    - Newsletter
+    - LLM
+    - IA Agentique
+    priorité: 3
+- name: Laboratoires et providers
+  color: '#2563eb'
+  sources:
+  - name: OpenAI
+    url: https://openai.com/news/rss.xml
+    keys:
+    - LLM
+    - IA Agentique
+    priorité: 1
+  - name: Anthropic Research
+    url: https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_research.xml
+    keys:
+    - recherche
+    - LLM
+    - IA Agentique
+    priorité: 1
+  - name: Google DeepMind
+    url: https://deepmind.google/blog/feed/basic/
+    keys:
+    - recherche
+    - LLM
+    - Deep Learning
+    priorité: 3
+  - name: Google AI
+    url: https://blog.google/technology/ai/rss/
+    keys:
+    - LLM
+    - Deep Learning
+    priorité: 1
+  - name: Meta AI
+    url: https://engineering.fb.com/feed/
+    keys:
+    - recherche
+    - LLM
+    priorité: 1
+  - name: Microsoft Research
+    url: https://www.microsoft.com/en-us/research/feed/
+    keys:
+    - recherche
+    - LLM
+    priorité: 2
+  - name: Mistral AI
+    url: https://github.com/mistralai/client-python/releases.atom
+    keys:
+    - LLM
+    priorité: 1
+  - name: Cohere Blog
+    url: https://cohere.com/blog/rss.xml
+    keys:
+    - LLM
+    - RAG
+    priorité: 3
+  - name: Allen Institute for AI
+    url: https://github.com/allenai/OLMo/releases.atom
+    keys:
+    - recherche
+    - LLM
+    priorité: 3
+  - name: EleutherAI Blog
+    url: https://github.com/EleutherAI/gpt-neox/releases.atom
+    keys:
+    - recherche
+    - LLM
+    priorité: 3
+  - name: Hugging Face Blog
+    url: https://huggingface.co/blog/feed.xml
+    keys:
+    - LLM
+    - Deep Learning
+    priorité: 1
+  - name: Alibaba
+    url: https://github.com/QwenLM/Qwen3/releases.atom
+    keys:
+    - Cloud
+    - LLM
+    priorité: 1
+  - name: Moonshot AI
+    url: https://github.com/MoonshotAI/Kimi-K2/releases.atom
+    keys:
+    - LLM
+    priorité: 1
+  - name: DeepSeek
+    url: https://github.com/deepseek-ai/DeepSeek-V3/releases.atom
+    keys:
+    - LLM
+    priorité: 1
+  - name: Unsloth Releases
+    url: https://github.com/unslothai/unsloth/releases.atom
+    keys:
+    - LLM
+    - Deep Learning
+    priorité: 1
+  - name: NVIDIA Technical Blog
+    url: https://developer.nvidia.com/blog/feed/
+    keys:
+    - HPC
+    - Deep Learning
+    - LLM
+    priorité: 2
+- name: Frameworks et SDK
+  color: '#0c9d78'
+  sources:
+  - name: Model Context Protocol Releases
+    url: https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 1
+  - name: LangChain Blog
+    url: https://blog.langchain.com/rss/
+    keys:
+    - IA Agentique
+    - Orchestration
+    - RAG
+    priorité: 1
+  - name: LangChain Releases
+    url: https://github.com/langchain-ai/langchain/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    - RAG
+    priorité: 1
+  - name: LangGraph Releases
+    url: https://github.com/langchain-ai/langgraph/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 1
+  - name: LangSmith Releases
+    url: https://github.com/langchain-ai/langsmith-sdk/releases.atom
+    keys:
+    - IA Agentique
+    - Monitoring
+    priorité: 1
+  - name: Deep Agents Releases
+    url: https://github.com/langchain-ai/deepagents/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 1
+  - name: Microsoft Semantic Kernel Blog
+    url: https://devblogs.microsoft.com/semantic-kernel/feed/
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: AutoGen Releases
+    url: https://github.com/microsoft/autogen/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: CrewAI Releases
+    url: https://github.com/crewAIInc/crewAI/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    priorité: 2
+  - name: Haystack Blog
+    url: https://github.com/deepset-ai/haystack/releases.atom
+    keys:
+    - IA Agentique
+    - RAG
+    priorité: 3
+  - name: LlamaIndex Releases
+    url: https://github.com/run-llama/llama_index/releases.atom
+    keys:
+    - IA Agentique
+    - RAG
+    priorité: 1
+  - name: n8n Blog
+    url: https://blog.n8n.io/rss/
+    keys:
+    - Orchestration
+    - Ops
+    priorité: 3
+  - name: OpenAI Agents SDK
+    url: https://github.com/openai/openai-agents-python/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Orchestration
+    - Monitoring
+    priorité: 2
+  - name: Google Agent Development Kit
+    url: https://github.com/google/adk-python/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    - Cloud
+    priorité: 3
+  - name: Hugging Face smolagents
+    url: https://github.com/huggingface/smolagents/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: DSPy Releases
+    url: https://github.com/stanfordnlp/dspy/releases.atom
+    keys:
+    - recherche
+    - LLM
+    - RAG
+    - Orchestration
+    priorité: 3
+  - name: PydanticAI Releases
+    url: https://github.com/pydantic/pydantic-ai/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: Agno Releases
+    url: https://github.com/agno-agi/agno/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: CAMEL-AI Releases
+    url: https://github.com/camel-ai/camel/releases.atom
+    keys:
+    - recherche
+    - IA Agentique
+    - Orchestration
+    priorité: 3
+  - name: Letta Releases
+    url: https://github.com/letta-ai/letta/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - RAG
+    priorité: 3
+  - name: Mastra Releases
+    url: https://github.com/mastra-ai/mastra/releases.atom
+    keys:
+    - IA Agentique
+    - Orchestration
+    - Ops
+    priorité: 3
+  - name: PyTorch Releases
+    url: https://github.com/pytorch/pytorch/releases.atom
+    keys:
+    - Deep Learning
+    priorité: 1
+  - name: TensorFlow Blog
+    url: https://blog.tensorflow.org/feeds/posts/default
+    keys:
+    - Deep Learning
+    priorité: 2
+  - name: Keras Blog
+    url: https://github.com/keras-team/keras/releases.atom
+    keys:
+    - Deep Learning
+    priorité: 2
+  - name: JAX Releases
+    url: https://github.com/jax-ml/jax/releases.atom
+    keys:
+    - Deep Learning
+    - HPC
+    priorité: 3
+  - name: Lightning AI Blog
+    url: https://lightning.ai/blog/rss.xml
+    keys:
+    - Deep Learning
+    - Ops
+    priorité: 1
+  - name: Transformers Releases
+    url: https://github.com/huggingface/transformers/releases.atom
+    keys:
+    - LLM
+    - Deep Learning
+    priorité: 1
+  - name: ONNX Releases
+    url: https://github.com/onnx/onnx/releases.atom
+    keys:
+    - Deep Learning
+    - Ops
+    priorité: 3
+  - name: Hugging Face Hub Releases
+    url: https://github.com/huggingface/huggingface_hub/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 1
+  - name: EleutherAI Evaluation Harness
+    url: https://github.com/EleutherAI/lm-evaluation-harness/releases.atom
+    keys:
+    - recherche
+    - LLM
+    - Ops
+    priorité: 3
+  - name: RAGFlow Releases
+    url: https://github.com/infiniflow/ragflow/releases.atom
+    keys:
+    - RAG
+    - Orchestration
+    priorité: 3
+  - name: Unstructured Blog
+    url: https://github.com/Unstructured-IO/unstructured/releases.atom
+    keys:
+    - RAG
+    priorité: 3
+  - name: Weaviate Blog
+    url: https://weaviate.io/blog/rss.xml
+    keys:
+    - RAG
+    - recherche
+    priorité: 2
+  - name: Qdrant Blog
+    url: https://github.com/qdrant/qdrant/releases.atom
+    keys:
+    - RAG
+    - recherche
+    priorité: 1
+  - name: Milvus Blog
+    url: https://github.com/milvus-io/milvus/releases.atom
+    keys:
+    - RAG
+    - recherche
+    priorité: 1
+  - name: pgvector Releases
+    url: https://github.com/pgvector/pgvector/releases.atom
+    keys:
+    - RAG
+    priorité: 1
+  - name: Elasticsearch Blog
+    url: https://www.elastic.co/blog/feed
+    keys:
+    - recherche
+    - RAG
+    - Monitoring
+    priorité: 2
+  - name: OpenSearch Blog
+    url: https://opensearch.org/blog/feed/
+    keys:
+    - recherche
+    - RAG
+    - Monitoring
+    priorité: 2
+  - name: MongoDB Blog
+    url: https://www.mongodb.com/blog/rss.xml
+    keys:
+    - Cloud
+    - RAG
+    priorité: 2
+  - name: Confluent Blog
+    url: https://github.com/confluentinc/confluent-kafka-python/releases.atom
+    keys:
+    - Cloud
+    - Ops
+    priorité: 2
+  - name: vLLM Releases
+    url: https://github.com/vllm-project/vllm/releases.atom
+    keys:
+    - LLM
+    - Ops
+    - HPC
+    priorité: 1
+  - name: SGLang Releases
+    url: https://github.com/sgl-project/sglang/releases.atom
+    keys:
+    - LLM
+    - Ops
+    - HPC
+    priorité: 1
+  - name: llm-d Releases
+    url: https://github.com/llm-d/llm-d/releases.atom
+    keys:
+    - LLM
+    - Ops
+    - HPC
+    priorité: 1
+  - name: LiteLLM Releases
+    url: https://github.com/BerriAI/litellm/releases.atom
+    keys:
+    - LLM
+    - Orchestration
+    - Ops
+    priorité: 1
+  - name: llama.cpp Releases
+    url: https://github.com/ggml-org/llama.cpp/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 1
+  - name: Ollama Releases
+    url: https://github.com/ollama/ollama/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 1
+  - name: Mistral Inference Releases
+    url: https://github.com/mistralai/mistral-inference/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 3
+  - name: BentoML Blog
+    url: https://github.com/bentoml/BentoML/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 3
+  - name: KServe Blog
+    url: https://github.com/kserve/kserve/releases.atom
+    keys:
+    - Ops
+    - Cloud
+    priorité: 1
+  - name: Open WebUI Releases
+    url: https://github.com/open-webui/open-webui/releases.atom
+    keys:
+    - LLM
+    - Ops
+    priorité: 1
+- name: HPC
+  color: '#d97706'
+  sources:
+  - name: NVIDIA Newsroom
+    url: https://nvidianews.nvidia.com/rss
+    keys:
+    - HPC
+    - Deep Learning
+    priorité: 1
+  - name: AMD Blog
+    url: https://gpuopen.com/feed.xml
+    keys:
+    - HPC
+    - Deep Learning
+    priorité: 3
+  - name: AMD ROCm Blog
+    url: https://rocm.blogs.amd.com/blog/atom.xml
+    keys:
+    - HPC
+    - Deep Learning
+    priorité: 3
+  - name: NCCL Releases
+    url: https://github.com/NVIDIA/nccl/releases.atom
+    keys:
+    - HPC
+    - Deep Learning
+    priorité: 3
+  - name: OpenUCX Releases
+    url: https://github.com/openucx/ucx/releases.atom
+    keys:
+    - HPC
+    - Ops
+    priorité: 3
+  - name: MLPerf News
+    url: https://mlcommons.org/feed/
+    keys:
+    - HPC
+    - recherche
+    priorité: 3
+  - name: HPCwire
+    url: https://www.hpcwire.com/feed/
+    keys:
+    - HPC
+    - Newsletter
+    priorité: 2
+  - name: TOP500 News
+    url: https://www.top500.org/news/feed/
+    keys:
+    - HPC
+    - Newsletter
+    priorité: 2
+  - name: The Next Platform
+    url: https://www.nextplatform.com/feed/
+    keys:
+    - HPC
+    - Newsletter
+    priorité: 3
+  - name: ServeTheHome
+    url: https://www.servethehome.com/feed/
+    keys:
+    - HPC
+    - Newsletter
+    priorité: 3
+- name: Ops, Cloud et plateformes
+  color: '#0891b2'
+  sources:
+  - name: MLflow Releases
+    url: https://github.com/mlflow/mlflow/releases.atom
+    keys:
+    - Ops
+    - Monitoring
+    priorité: 2
+  - name: ClearML Releases
+    url: https://github.com/clearml/clearml/releases.atom
+    keys:
+    - Ops
+    - Monitoring
+    priorité: 2
+  - name: Kubeflow Blog
+    url: https://blog.kubeflow.org/feed.xml
+    keys:
+    - Ops
+    - Orchestration
+    - Cloud
+    priorité: 3
+  - name: OpenShift AI
+    url: https://github.com/opendatahub-io/opendatahub-operator/releases.atom
+    keys:
+    - Ops
+    - Orchestration
+    - Cloud
+    priorité: 2
+  - name: Anyscale Blog
+    url: https://www.anyscale.com/blog/rss.xml
+    keys:
+    - Ops
+    - Orchestration
+    - Cloud
+    priorité: 2
+  - name: Weights & Biases Fully Connected
+    url: https://wandb.ai/fully-connected/rss.xml
+    keys:
+    - Ops
+    - Monitoring
+    priorité: 1
+  - name: Arize AI Blog
+    url: https://github.com/Arize-ai/phoenix/releases.atom
+    keys:
+    - Monitoring
+    - Ops
+    priorité: 3
+  - name: Langfuse Releases
+    url: https://github.com/langfuse/langfuse/releases.atom
+    keys:
+    - Monitoring
+    - LLM
+    - IA Agentique
+    priorité: 1
+  - name: AWS Machine Learning Blog
+    url: https://aws.amazon.com/blogs/machine-learning/feed/
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Azure AI & Machine Learning Blog
+    url: https://techcommunity.microsoft.com/t5/ai-machine-learning-blog/bg-p/AzureAIBlog/rss
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Google Cloud AI Blog
+    url: https://cloud.google.com/blog/products/ai-machine-learning/rss
+    keys:
+    - Cloud
+    - LLM
+    - Ops
+    priorité: 2
+  - name: Databricks Blog
+    url: https://www.databricks.com/feed
+    keys:
+    - Cloud
+    - Ops
+    - RAG
+    priorité: 3
+  - name: Snowflake Blog
+    url: https://github.com/snowflakedb/snowpark-python/releases.atom
+    keys:
+    - Cloud
+    - Ops
+    - RAG
+    priorité: 3
+- name: Sécurité, guardrails et évaluation
+  color: '#dc2626'
+  sources:
+  - name: Microsoft PyRIT Releases
+    url: https://github.com/Azure/PyRIT/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - recherche
+    priorité: 3
+  - name: NVIDIA garak Releases
+    url: https://github.com/NVIDIA/garak/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - Monitoring
+    priorité: 3
+  - name: UK AISI Inspect AI Releases
+    url: https://github.com/UKGovernmentBEIS/inspect_ai/releases.atom
+    keys:
+    - LLM
+    - Politique
+    - Cybersécurité
+    - recherche
+    priorité: 2
+  - name: NeMo Guardrails Releases
+    url: https://github.com/NVIDIA/NeMo-Guardrails/releases.atom
+    keys:
+    - LLM
+    - Orchestration
+    - Cybersécurité
+    priorité: 1
+  - name: Giskard Releases
+    url: https://github.com/Giskard-AI/giskard/releases.atom
+    keys:
+    - LLM
+    - RAG
+    - Monitoring
+    - Cybersécurité
+    priorité: 3
+  - name: Promptfoo Releases
+    url: https://github.com/promptfoo/promptfoo/releases.atom
+    keys:
+    - LLM
+    - Monitoring
+    - Cybersécurité
+    priorité: 1
+  - name: LLM Guard Releases
+    url: https://github.com/protectai/llm-guard/releases.atom
+    keys:
+    - LLM
+    - Cybersécurité
+    - Ops
+    priorité: 1
+  - name: Guardrails AI Releases
+    url: https://github.com/guardrails-ai/guardrails/releases.atom
+    keys:
+    - LLM
+    - Orchestration
+    - Cybersécurité
+    priorité: 1
+  - name: OWASP GenAI Security Project
+    url: https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/releases.atom
+    keys:
+    - LLM
+    - IA Agentique
+    - Cybersécurité
+    priorité: 1
+- name: Appels à projets et financements
+  color: '#059669'
+  sources:
+  - name: Bpifrance
+    url: https://www.bpifrance.fr/nos-appels-a-projets-concours
+    keys:
+    - Appels à projets
+    - Politique
+    - Cloud
+    enabled: false
+    priorité: 1
+  - name: ANR
+    url: https://anr.fr/fr/appels/
+    keys:
+    - recherche
+    - Appels à projets
+    - Cybersécurité
+    enabled: false
+    priorité: 1
+  - name: HaDEA
+    url: https://hadea.ec.europa.eu/node/1/rss_en
+    keys:
+    - Appels à projets
+    - Cloud
+    - Politique
+    priorité: 2
+    enabled: false
+  - name: RAISE
+    url: https://research-and-innovation.ec.europa.eu/strategy/strategy-research-and-innovation/our-digital-future/european-ai-science-strategy/raise-resource-ai-science-europe_en
+    keys:
+    - recherche
+    - HPC
+    - Appels à projets
+    enabled: false
+    priorité: 2
+  - name: EuroHPC JU
+    url: https://eurohpc-ju.europa.eu/node/1/rss_en
+    keys:
+    - HPC
+    - Appels à projets
+    - Politique
+    priorité: 1
+    enabled: false
+  - name: EU Funding & Tenders, Horizon Europe
+    url: https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/programmes/horizon
+    keys:
+    - recherche
+    - Appels à projets
+    - Politique
+    enabled: false
+    priorité: 1
+  - name: US NSF — Funding opportunities
+    url: https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml
+    keys:
+    - recherche
+    - Appels à projets
+    priorité: 1
+  - name: DARPA
+    url: https://www.darpa.mil/work-with-us/opportunities
+    keys:
+    - recherche
+    - Cybersécurité
+    - Appels à projets
+    enabled: false
+    priorité: 2
+- name: Institutions publiques et politiques
+  color: '#be123c'
+  sources:
+  - name: France Numérique
+    url: https://www.francenum.gouv.fr/flux-rss-principal
+    keys:
+    - Politique
+    - Cloud
+    priorité: 2
+  - name: Commission européene de la stratégie numérique
+    url: https://digital-strategy.ec.europa.eu/en/rss.xml
+    keys:
+    - Politique
+    - Cloud
+    priorité: 2
+  - name: US NIST Artificial Intelligence
+    url: https://www.nist.gov/news-events/artificial-intelligence/rss.xml
+    keys:
+    - Politique
+    - recherche
+    priorité: 2
+  - name: Chine — Ministère des Affaires étrangères
+    url: https://cs.mfa.gov.cn/gyls/lsgz/lqbb/rss_57447.xml
+    keys:
+    - Politique
+    priorité: 3
+  - name: OECD AI
+    url: https://oecd.ai/en/rss
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+    enabled: false
+  - name: Partnership on AI
+    url: https://partnershiponai.org/feed/
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+  - name: Center for Security and Emerging Technology
+    url: https://cset.georgetown.edu/feed/
+    keys:
+    - Politique
+    - recherche
+    priorité: 2
+  - name: AI Now Institute
+    url: https://ainowinstitute.org/feed
+    keys:
+    - Politique
+    - recherche
+    priorité: 3
+  - name: ANSSI
+    url: https://cyber.gouv.fr/actualites/rss/
+    keys:
+    - Politique
+    - Cybersécurité
+    - IA Agentique
+    priorité: 1
+  - name: CERT-FR
+    url: https://www.cert.ssi.gouv.fr/feed/
+    keys:
+    - Cybersécurité
+    - Monitoring
+    priorité: 1
+  - name: CNIL
+    url: https://www.cnil.fr/fr/rss.xml
+    keys:
+    - Politique
+    - Cybersécurité
+    - IA Agentique
+    priorité: 1
+  - name: ENISA News
+    url: https://www.enisa.europa.eu/news/enisa-news/RSS
+    keys:
+    - Politique
+    - Cybersécurité
+    priorité: 3
+    enabled: false
+  - name: UK AI Security Institute
+    url: https://www.gov.uk/search/news-and-communications.atom?organisations%5B%5D=ai-security-institute
+    keys:
+    - recherche
+    - Politique
+    - Cybersécurité
+    priorité: 3
+  - name: UK NCSC — Artificial Intelligence
+    url: https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml
+    keys:
+    - Politique
+    - IA Agentique
+    - Cybersécurité
+    priorité: 3

@@ -1,70 +1,81 @@
 # Argos
 
-> A self-hosted RSS monitoring platform for generative AI, agents, RAG, deep learning, and HPC.
+Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA, au RAG, aux agents, au deep learning, au cloud et au HPC. Elle collecte et déduplique les articles, surveille la santé des sources et fournit un assistant RAG local avec citations.
 
-Argos collects RSS/Atom feeds, stores articles locally in SQLite, and provides a React interface for browsing and exploring them. Sources, alerts, and AI processing remain under your control.
+## Fonctions principales
 
-## Highlights
+- catalogue YAML de 134 sources réparties en 8 catégories, éditable dans l’interface ;
+- clés thématiques et priorités P1/P2/P3 affichées dans Flux ;
+- taxonomie globale de 18 tags en `snake_case`, filtrables et affichés sur les cartes ;
+- collecte concurrente, normalisation, déduplication et rétention dans SQLite ;
+- recherche booléenne, filtres cumulatifs par catégorie, priorité, source et tags, et santé des flux ;
+- index RAG Chroma synchronisé après collecte ;
+- retrieval vectoriel filtré par métadonnées et génération sur Ollama/Nyx ;
+- graphe LangGraph minimal avec mémoire de session en mémoire vive ;
+- pipeline collecte, indexation, synthèse et livraison Telegram à 10 h, 14 h et 18 h avec systemd ;
+- favoris durables affichés sur Homepage et filtrables dans Flux ;
+- progression pondérée et granulaire de la pipeline complète ;
+- onglet Config pour éditer les YAML et vider séparément SQLite ou Chroma après confirmation.
 
-- Feed browsing, boolean search, filters, reading mode, and a “since last visit” digest.
-- Editable sources and categories from the interface or [`config/sources.yml`](config/sources.yml).
-- Per-source health: last success, latency, HTTP status, volume, and one-source test action.
-- Tracking-URL and similar-syndication deduplication.
-- Heatmaps, semantic clusters, and an embedding-powered scatter plot.
-- RAG assistant: relevant-article retrieval, local Ollama inference, and citations.
-- Scheduled collection with systemd and optional Telegram alerts.
+La navigation principale est une barre horizontale en pilules. Config regroupe l’éditeur structuré des sources et les réglages avancés dans deux sous-onglets.
+L’onglet Assistants regroupe le chatbot RAG et l’état non sensible du bot Telegram.
+Il décrit aussi les cycles automatiques à partir du fichier timer systemd réellement monté dans l’API, ainsi que la dernière exécution enregistrée.
+Homepage regroupe les quatre métriques de pilotage, les 30 derniers favoris dans une fenêtre de trois cartes et la synthèse Markdown disponible dans `data/summary.md`. Santé présente le dernier cycle, le stockage total, les signaux dont les P1 et l’état agrégé des sources.
+
+Après chaque indexation réussie, un agent LangGraph repère les nouveaux P1, les regroupe en cinq parties maximum, enrichit chaque partie avec le retrieval Chroma puis remplace atomiquement `data/summary.md`. Une panne Nyx conserve le document précédent et reporte les signaux à la prochaine collecte.
 
 ## Architecture
 
 ```text
-Browser
-   │ :1207
-   ▼
-React + nginx ── /api ──► Flask / RSS / RAG
-                            │
-                            ├── SQLite (articles, health, embeddings, clusters)
-                            └── Local Ollama (optional)
+Navigateur :1207
+    │
+React/Vite servi par nginx :8080
+    │ /api
+Flask :8000 (réseau Docker uniquement)
+    ├── flux RSS/Atom
+    ├── SQLite /app/data/monitoring.db
+    ├── Chroma /app/data/chroma
+    └── Ollama sur Nyx 192.168.1.11:11434
 ```
 
-## Quick start
+Le code serveur se trouve dans `backend/` : `feeds/` regroupe collecte, articles et stockage, `system/` la configuration et la santé, et `rag/` l’indexation, le retrieval et l’agent. Le service Compose garde le nom `api`, même si son contexte de build est `./backend`.
 
-Requirements: Docker Engine and Docker Compose.
+## Démarrage
+
+Prérequis : Docker Engine et Docker Compose.
 
 ```bash
-git clone ...
-cd argos
+docker compose config
 docker compose up -d --build
-```
-
-Open [http://localhost:1207](http://localhost:1207), then start the first collection from the **Feed** tab.
-
-```bash
 docker compose ps
-curl http://localhost:1207/api/health
-docker compose logs -f api
+curl --fail http://127.0.0.1:1207/api/health
 ```
 
-Persistent data is stored in `data/monitoring.db`. Do not run `docker compose down -v`.
+Ouvrir <http://localhost:1207>, puis lancer la première collecte depuis **Flux**. Le port public est `1207`; Flask n’est pas publié directement.
+
+Les données persistantes sont dans `data/monitoring.db` et `data/chroma/`. Elles sont montées dans les conteneurs et ne doivent pas être remplacées lors d’une synchronisation.
 
 ## Configuration
 
-- Sources: [`config/sources.yml`](config/sources.yml)
-- Local AI: [`config/ai.yaml`](config/ai.yaml)
-- Telegram: [`config/telegram.yaml`](config/telegram.yaml)
+- `config/sources.yml` : taxonomie globale des tags, catégories, flux, clés, priorités, fenêtre RSS et rétention SQLite ;
+- `config/ai.yaml` : Ollama, embeddings RAG, Chroma, chunking et retrieval ;
+- `config/prompt.yaml` : prompts du chatbot, du self-query et de la synthèse P1 ;
+- `config/telegram.yaml` : livraison facultative du rapport AI Summary ;
+- `systemd/argos-collect.*` : collecte à 10 h, 14 h et 18 h sur Atlas.
 
-Configure the Ollama URL and models in `config/ai.yaml`:
+Les embeddings utilisent actuellement `nomic-embed-text-v2-moe:latest` et les réponses `qwen3.6:27b` sur Nyx. La disponibilité de Nyx est nécessaire pour l’indexation Chroma et l’assistant, mais pas pour lire les articles déjà collectés.
 
-- embeddings: `nomic-embed-text-v2-moe:latest`;
-- assistant: `qwen3.6:27b`.
+Si Nyx est indisponible après une collecte, les articles restent dans SQLite et l’index RAG passe en attente. La prochaine collecte, planifiée ou manuelle, reprend automatiquement la synchronisation incrémentale.
 
-The **Viz** tab initializes embeddings and clusters on demand. The assistant retrieves the closest articles before generating an answer.
-
-## Deployment
-
-Argos exposes port `1207`. On the target host:
+## Vérifications locales
 
 ```bash
-git clone git@github.com:victorcarre6/argos.git
-cd argos
-docker compose up -d --build
+PYENV_VERSION=nexus ruff check backend tests
+PYENV_VERSION=nexus black --check backend tests
+PYTHONPATH=backend PYENV_VERSION=nexus python -m unittest discover -s tests
+npm --prefix web run lint
+npm --prefix web run build
+docker compose config --quiet
 ```
+
+La documentation détaillée commence dans [`docs/PROJECT.md`](docs/PROJECT.md). Le contexte opérationnel condensé est dans [`docs/QUICK_CATCH.md`](docs/QUICK_CATCH.md).

@@ -1,0 +1,41 @@
+assistant:
+  system: |-
+    Tu es Argos, assistant de veille IA. Réponds en français uniquement à partir
+    du contexte récupéré pour la question courante. Cite les sources avec [1],
+    [2]. Si le contexte est insuffisant, dis-le clairement.
+
+    CONTEXTE COURANT:
+    {context}
+
+retrieval:
+  query_plan: |-
+    Transforme la question de veille en requête sémantique et filtres.
+    N'invente jamais de valeur. N'utilise un filtre que s'il est explicitement
+    demandé.
+
+    Catégories autorisées: {categories}
+    Sources autorisées: {sources}
+    Clés autorisées: {keys}
+    Priorités autorisées: 1, 2, 3. Les dates doivent être ISO-8601.
+
+    Question: {question}
+
+summary:
+  plan: |-
+    Regroupe ces nouveaux signaux P1 en parties thématiques. Crée au maximum cinq
+    parties. Utilise une cinquième partie nommée exactement « Autres » si
+    nécessaire. Chaque identifiant doit apparaître une seule fois et aucun signal
+    ne doit être perdu. Les titres doivent être courts et informatifs.
+
+    Signaux:
+    {signals}
+
+  section: |-
+    Rédige en français une section de synthèse de veille intitulée « {title} ».
+    Analyse chacun des nouveaux signaux P1, explique son importance et rapproche-le
+    des signaux antérieurs pertinents. N'invente aucun fait. Cite les références
+    avec [1], [2], etc. Retourne uniquement le corps Markdown de la section, sans
+    répéter son titre.
+
+    Références:
+    {references}

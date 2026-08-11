@@ -1,17 +1,20 @@
 services:
   api:
-    build: ./api
+    build: ./backend
     container_name: argos-api
     environment:
       APP_ROOT: /app
       SOURCES_CONFIG: /app/config/sources.yml
+      PROMPT_CONFIG: /app/config/prompt.yaml
+      TIMER_CONFIG: /app/systemd/argos-collect.timer
       DATABASE_PATH: /app/data/monitoring.db
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
     volumes:
       - ./config:/app/config
       - ./data:/app/data
+      - ./systemd/argos-collect.timer:/app/systemd/argos-collect.timer:ro
     restart: unless-stopped
-    mem_limit: 350m
+    mem_limit: 700m
 
   web:
     build: ./web

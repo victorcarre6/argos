@@ -1,10 +1,20 @@
-# Services Ollama Nyx : réglages batch et clustering.
+# Services Ollama Nyx : embeddings RAG et assistant.
 embedding:
-  url:
-  model:
-  batch_size: 16
-  threshold: 0.45 
+  url: http://192.168.1.11:11434
+  model: nomic-embed-text-v2-moe:latest
 assistant:
-  url:
-  model:
-  timeout_seconds:
+  url: http://192.168.1.11:11434
+  model: qwen3.6:27b
+  timeout_seconds: 180
+rag:
+  chroma_path: /app/data/chroma
+  index_limit: 2000
+  candidate_k: 24
+  final_k: 6
+  query_model: ""
+  session_message_limit: 12
+  split_min_chars: 900
+  chunk_size: 1200
+  chunk_overlap: 180
+summary:
+  top_n: 40
