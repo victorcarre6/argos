@@ -42,8 +42,10 @@ class BackendStructureTest(unittest.TestCase):
         _pipeline_progress("fetch", "Flux 1", 1, 2)
         self.assertEqual(22.5, collection_state["progress"]["percent"])
         _pipeline_progress("summary", "Rédaction", 1, 2)
-        self.assertEqual(85.0, collection_state["progress"]["percent"])
+        self.assertEqual(83.5, collection_state["progress"]["percent"])
         self.assertEqual("Rédaction", collection_state["progress"]["label"])
+        _pipeline_progress("summarizer", "Condensation", 1, 2)
+        self.assertEqual(94.5, collection_state["progress"]["percent"])
 
     def test_app_health_exposes_safe_telegram_status(self) -> None:
         health = self.client.get("/api/health/app").get_json()
@@ -72,19 +74,42 @@ class BackendStructureTest(unittest.TestCase):
         self.assertTrue(payload["persistent"])
 
     def test_summary_reads_the_fixed_markdown_file(self) -> None:
-        summary_path = Path(temporary_directory.name) / "summary.md"
-        summary_path.write_text("# Synthèse\n\nSignal important.", encoding="utf-8")
-        original = health_module.SUMMARY_PATH
-        health_module.SUMMARY_PATH = summary_path
-        try:
-            response = self.client.get("/api/summary")
-        finally:
-            health_module.SUMMARY_PATH = original
+        with tempfile.TemporaryDirectory() as directory:
+            summary_path = Path(directory) / "summary.md"
+            summary_path.write_text("# Synthèse\n\nSignal important.", encoding="utf-8")
+            original = health_module.SUMMARY_PATH
+            health_module.SUMMARY_PATH = summary_path
+            try:
+                response = self.client.get("/api/summary")
+            finally:
+                health_module.SUMMARY_PATH = original
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             "# Synthèse\n\nSignal important.", response.get_json()["content"]
         )
         self.assertIsNotNone(response.get_json()["updated_at"])
+
+    def test_latest_summary_can_be_downloaded_with_its_filename(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            summary_path = Path(directory) / "summary.md"
+            reports = summary_path.parent / "reports"
+            reports.mkdir()
+            report = reports / "report_260812_1405.md"
+            report.write_text("# Rapport téléchargeable", encoding="utf-8")
+            original = health_module.SUMMARY_PATH
+            health_module.SUMMARY_PATH = summary_path
+            try:
+                response = self.client.get("/api/summary/download")
+                self.assertEqual(200, response.status_code)
+                self.assertEqual(
+                    b"# Rapport t\xc3\xa9l\xc3\xa9chargeable", response.get_data()
+                )
+                self.assertIn(
+                    "report_260812_1405.md", response.headers["Content-Disposition"]
+                )
+                response.close()
+            finally:
+                health_module.SUMMARY_PATH = original
 
     def test_stats_use_the_active_source_catalog(self) -> None:
         config = load_sources_config()

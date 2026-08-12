@@ -1,4 +1,4 @@
-# Utilisé uniquement après la génération du rapport data/summary.md.
+# Utilisé après la condensation du dernier rapport en un message texte.
 enabled: false
 bot_token_env: "TELEGRAM_BOT_TOKEN"
 chat_id: ""

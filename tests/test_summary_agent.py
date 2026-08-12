@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -151,12 +151,15 @@ class SummaryAgentTest(unittest.TestCase):
         with (
             patch("rag.indexing.sync_index", side_effect=RuntimeError("Nyx down")),
             patch("rag.summary_agent.generate_summary") as generate,
+            patch("rag.summarizer.generate_telegram_summary") as summarize,
             patch("system.telegram.send_summary_if_pending") as send,
         ):
-            _index, summary, telegram = _refresh_ai_outputs(errors)
+            _index, summary, summarizer, telegram = _refresh_ai_outputs(errors)
         self.assertIsNone(summary)
+        self.assertIsNone(summarizer)
         self.assertIsNone(telegram)
         generate.assert_not_called()
+        summarize.assert_not_called()
         send.assert_not_called()
         self.assertIn("Index RAG: Nyx down", errors)
 
@@ -165,14 +168,41 @@ class SummaryAgentTest(unittest.TestCase):
             patch("rag.indexing.sync_index", return_value={"indexed": 2}),
             patch("rag.summary_agent.generate_summary", return_value=expected),
             patch(
+                "rag.summarizer.generate_telegram_summary",
+                return_value={"generated": True, "chars": 3000},
+            ) as summarize,
+            patch("system.telegram.telegram_message_limit", return_value=3900),
+            patch(
                 "system.telegram.send_summary_if_pending",
                 return_value={"sent": True, "messages": 1},
             ) as send,
         ):
-            _index, summary, telegram = _refresh_ai_outputs([])
+            _index, summary, summarizer, telegram = _refresh_ai_outputs([])
         self.assertEqual(expected, summary)
+        self.assertTrue(summarizer["generated"])
         self.assertTrue(telegram["sent"])
+        summarize.assert_called_once_with(3900, progress=ANY)
         send.assert_called_once()
+
+    def test_summarizer_failure_prevents_raw_report_delivery(self) -> None:
+        errors = []
+        with (
+            patch("rag.indexing.sync_index", return_value={"indexed": 2}),
+            patch(
+                "rag.summary_agent.generate_summary", return_value={"generated": True}
+            ),
+            patch(
+                "rag.summarizer.generate_telegram_summary",
+                side_effect=RuntimeError("résumé trop long"),
+            ),
+            patch("system.telegram.send_summary_if_pending") as send,
+        ):
+            _index, _summary, summarizer, telegram = _refresh_ai_outputs(errors)
+
+        self.assertIsNone(summarizer)
+        self.assertIsNone(telegram)
+        send.assert_not_called()
+        self.assertIn("Summarizer: résumé trop long", errors)
 
 
 if __name__ == "__main__":

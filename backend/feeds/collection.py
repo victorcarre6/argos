@@ -30,8 +30,9 @@ PIPELINE_RANGES = {
     "fetch": (0, 45),
     "storage": (45, 55),
     "embedding": (55, 75),
-    "summary": (75, 95),
-    "telegram": (95, 100),
+    "summary": (75, 92),
+    "summarizer": (92, 97),
+    "telegram": (97, 100),
 }
 
 
@@ -402,14 +403,19 @@ def _finish_run(
 def _refresh_ai_outputs(
     errors: list[str],
     progress: ProgressCallback = _pipeline_progress,
-) -> tuple[dict[str, Any], dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[
+    dict[str, Any],
+    dict[str, Any] | None,
+    dict[str, Any] | None,
+    dict[str, Any] | None,
+]:
     from rag.indexing import index_status, sync_index
 
     try:
         index_result = sync_index(progress=progress)
     except Exception as exc:
         errors.append(f"Index RAG: {exc}")
-        return index_status(), None, None
+        return index_status(), None, None, None
 
     try:
         from rag.summary_agent import generate_summary
@@ -417,15 +423,31 @@ def _refresh_ai_outputs(
         summary_result = generate_summary(progress=progress)
     except Exception as exc:
         errors.append(f"AI Summary: {exc}")
-        return index_result, None, None
+        return index_result, None, None, None
+
+    try:
+        from rag.summarizer import generate_telegram_summary
+        from system.telegram import telegram_message_limit
+
+        summarizer_result = generate_telegram_summary(
+            telegram_message_limit(), progress=progress
+        )
+    except Exception as exc:
+        errors.append(f"Summarizer: {exc}")
+        return index_result, summary_result, None, None
 
     try:
         from system.telegram import send_summary_if_pending
 
-        return index_result, summary_result, send_summary_if_pending(progress=progress)
+        return (
+            index_result,
+            summary_result,
+            summarizer_result,
+            send_summary_if_pending(progress=progress),
+        )
     except Exception as exc:
         errors.append(f"Telegram: {exc}")
-        return index_result, summary_result, None
+        return index_result, summary_result, summarizer_result, None
 
 
 def collect(trigger: str = "manual") -> None:
@@ -500,7 +522,9 @@ def collect(trigger: str = "manual") -> None:
         pruned = _prune_articles(config)
         _pipeline_progress("storage", "Recalcul des scores et tags", 3, 3)
         rescored = _refresh_scores(config)
-        index_result, summary_result, telegram_result = _refresh_ai_outputs(errors)
+        index_result, summary_result, summarizer_result, telegram_result = (
+            _refresh_ai_outputs(errors)
+        )
         result = {
             "sources": len(tasks),
             "failed_sources": collection_state["progress"]["failed"],
@@ -511,6 +535,7 @@ def collect(trigger: str = "manual") -> None:
             "rescored": rescored,
             "rag_index": index_result,
             "summary": summary_result,
+            "summarizer": summarizer_result,
             "telegram": telegram_result,
             "errors": errors,
         }

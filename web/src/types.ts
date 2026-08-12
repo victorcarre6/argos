@@ -79,11 +79,24 @@ export type AsyncState = {
       planning_mode: "llm" | "fallback" | null;
       path: string;
     } | null;
+    summarizer?: {
+      generated: boolean;
+      reused: boolean;
+      path: string | null;
+      chars: number;
+    } | null;
     errors: string[];
   } | null;
   error: string | null;
   progress: {
-    stage: "idle" | "fetch" | "storage" | "embedding" | "summary" | "telegram";
+    stage:
+      | "idle"
+      | "fetch"
+      | "storage"
+      | "embedding"
+      | "summary"
+      | "summarizer"
+      | "telegram";
     label: string;
     percent: number;
     completed: number;

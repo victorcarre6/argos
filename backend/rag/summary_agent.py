@@ -12,7 +12,8 @@ from feeds.database import connect
 from rag.models import chat_model
 from rag.prompts import load_prompt
 from rag.retrieve import retrieve
-from system.settings import SUMMARY_PATH, load_ai_config, load_sources_config, utcnow
+from system.reports import latest_report_path, report_path, report_updated_at
+from system.settings import SUMMARY_PATH, load_ai_config, load_sources_config
 
 
 class PlannedSection(BaseModel):
@@ -30,6 +31,7 @@ class SummaryState(TypedDict, total=False):
     planning_mode: str
     drafts: list[dict[str, str]]
     document: str
+    generated_at: str
 
 
 _graph: Any | None = None
@@ -56,10 +58,9 @@ def _new_p1_signals() -> list[dict[str, Any]]:
     ]
     if not p1_sources:
         return []
-    if SUMMARY_PATH.exists():
-        cutoff = datetime.fromtimestamp(
-            SUMMARY_PATH.stat().st_mtime, timezone.utc
-        ).isoformat()
+    latest_report = latest_report_path(SUMMARY_PATH)
+    if latest_report:
+        cutoff = report_updated_at(latest_report)
     else:
         max_age_days = max(1, int(config.get("collection", {}).get("max_age_days", 14)))
         cutoff = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).isoformat()
@@ -255,24 +256,30 @@ def _compose_node(state: SummaryState) -> SummaryState:
         len(state["drafts"]) + 2,
         len(state["drafts"]) + 4,
     )
-    generated_at = utcnow()
+    generated_at = datetime.now(timezone.utc)
     sections = "\n\n".join(
         f"## {draft['title']}\n\n{draft['content'].strip()}"
         for draft in state["drafts"]
     )
     document = (
-        "# Synthèse IA\n\n"
-        f"> Générée le {generated_at} à partir de "
+        f"# Synthèse IA — {generated_at.strftime('%d/%m/%Y %H:%M UTC')}\n\n"
+        f"> Générée le {generated_at.isoformat()} à partir de "
         f"{len(state['signals'])} nouveau(x) signal(aux) P1.\n\n{sections}\n"
     )
-    return {"document": document}
+    return {"document": document, "generated_at": generated_at.isoformat()}
 
 
 def _save_node(state: SummaryState) -> SummaryState:
-    SUMMARY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temporary = SUMMARY_PATH.with_suffix(".md.tmp")
-    temporary.write_text(state["document"], encoding="utf-8")
-    temporary.replace(SUMMARY_PATH)
+    generated_at = datetime.fromisoformat(state["generated_at"])
+    archive_path = report_path(SUMMARY_PATH, generated_at)
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    archive_temporary = archive_path.with_suffix(".md.tmp")
+    archive_temporary.write_text(state["document"], encoding="utf-8")
+    archive_temporary.replace(archive_path)
+
+    summary_temporary = SUMMARY_PATH.with_suffix(".md.tmp")
+    summary_temporary.write_text(state["document"], encoding="utf-8")
+    summary_temporary.replace(SUMMARY_PATH)
     _progress("Rapport sauvegardé", 1, 1)
     return {}
 

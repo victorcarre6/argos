@@ -290,3 +290,21 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 - La rétention SQLite est configurée dans `storage.retention_days`.
 - Nyx était configuré sur `:11434` ; l’assistant utilisait déjà `qwen3.6:27b`.
 - La route publique de collecte est `/api/refresh` ; `/api/collect` reste une compatibilité API.
+## 12/08 08:44 — Historique daté des rapports
+
+- Archivage UTC de chaque synthèse dans `data/reports/report_YYMMDD_HHMM.md`, avec date reprise dans le titre Markdown.
+- Résolution commune du dernier rapport pour le seuil P1, Homepage et Telegram ; repli sur `data/summary.md` pour migrer sans perdre le seuil existant.
+- Conservation de `data/summary.md` comme copie courante pour les intégrations historiques.
+## 12/08 09:22 — Summarizer Telegram
+
+- Insertion d’un graphe `load → summarize → save` entre la synthèse P1 et Telegram.
+- Production persistante d’un texte sans Markdown ni références, titré `Rapport DD-MM HH:MM` et strictement limité à un message.
+- Refus des sorties trop longues plutôt que découpage ; reprise d’envoi depuis l’artefact existant sans nouvel appel Nyx.
+- Test de condensation basé sur le rapport réel de 53 Ko dans `data_example/report.md`.
+## 12/08 09:35 — En-tête des favoris Homepage
+
+- Retrait de l’étoile décorative de la carte Flux favoris, sans modifier les favoris ni leur filtre dans Flux.
+## 12/08 09:45 — Téléchargement du dernier rapport
+
+- Renommage de `AI Summary` en `Dernier rapport` sur Homepage.
+- Ajout d’un bouton téléchargeant le dernier Markdown avec son nom daté `report_YYMMDD_HHMM.md` via une route fixe.

@@ -4,12 +4,13 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from feeds.collection import fetch_source, save_source_health
 from feeds.database import connect
 from rag.agent import assistant_status
 from rag.indexing import index_status
+from system.reports import latest_report_path, report_updated_at
 from system.settings import (
     DATABASE_PATH,
     SUMMARY_PATH,
@@ -64,13 +65,25 @@ def health() -> Any:
 
 @blueprint.get("/api/summary")
 def summary() -> Any:
-    if not SUMMARY_PATH.exists():
+    report = latest_report_path(SUMMARY_PATH)
+    if report is None:
         return jsonify(content="", updated_at=None)
     return jsonify(
-        content=SUMMARY_PATH.read_text(encoding="utf-8"),
-        updated_at=datetime.fromtimestamp(
-            SUMMARY_PATH.stat().st_mtime, timezone.utc
-        ).isoformat(),
+        content=report.read_text(encoding="utf-8"),
+        updated_at=report_updated_at(report),
+    )
+
+
+@blueprint.get("/api/summary/download")
+def download_summary() -> Any:
+    report = latest_report_path(SUMMARY_PATH)
+    if report is None:
+        return jsonify(error="Aucun rapport disponible"), 404
+    return send_file(
+        report,
+        as_attachment=True,
+        download_name=report.name,
+        mimetype="text/markdown",
     )
 
 
