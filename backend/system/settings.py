@@ -92,12 +92,19 @@ def load_ai_config() -> dict[str, Any]:
             "candidate_k": 24,
             "final_k": 6,
             "query_model": "",
-            "session_message_limit": 12,
             "split_min_chars": 900,
             "chunk_size": 1200,
             "chunk_overlap": 180,
         },
     )
+    assistant_rag = config["assistant"].get("rag")
+    config["assistant"]["rag"] = {
+        "candidate_k": config["rag"]["candidate_k"],
+        "final_k": config["rag"]["final_k"],
+        "query_model": config["rag"]["query_model"],
+        "session_message_limit": 12,
+        **(assistant_rag if isinstance(assistant_rag, dict) else {}),
+    }
     config["summary"] = _section_with_defaults(
         config,
         "summary",

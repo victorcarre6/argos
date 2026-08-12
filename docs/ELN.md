@@ -315,3 +315,10 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 - Remplacement de la réponse unique par tous les tours utilisateur/assistant, associés au même `session_id` LangGraph.
 - Hauteur du chat portée à 42 rem, soit environ trois fois la carte précédente, et conservation de la chronologie dans le navigateur lors des changements d’onglet.
 - Ajout d’une action Nouvelle conversation qui efface le checkpoint backend et renouvelle la session locale.
+
+## 12/08 10:00 — Retrieval dédié à l’assistant
+
+- Conservation des paramètres `rag` existants pour l’index partagé et le retrieval utilisé pendant la rédaction du rapport.
+- Ajout de `assistant.rag` avec ses propres `candidate_k`, `final_k`, `query_model` et `session_message_limit`.
+- Routage explicite du chatbot vers ce profil, sans modifier le profil du rapport.
+- Compatibilité des anciens YAML : en l’absence de la nouvelle section, l’assistant hérite des limites et du modèle de requête de `rag`.

@@ -98,7 +98,7 @@ Pour chaque question :
 4. Argos déduplique les articles et garde jusqu’à 6 sources ;
 5. le modèle `qwen3.6:27b` répond uniquement à partir du contexte et cite `[1]`, `[2]`, etc.
 
-L’assistant conversationnel utilise `START → retrieve → generate → END`. Un UUID stable du navigateur sert de `thread_id`; `InMemorySaver` conserve au plus 12 messages récents utilisés par la génération. Le frontend affiche les tours successifs et conserve leur représentation dans `localStorage` pour survivre aux changements d’onglet. L’action Nouvelle conversation efface le checkpoint courant, la chronologie locale et crée un nouvel UUID. La mémoire de raisonnement du backend disparaît à chaque redémarrage du processus.
+L’assistant conversationnel utilise `START → retrieve → generate → END`. Un UUID stable du navigateur sert de `thread_id`; `InMemorySaver` conserve les messages récents utilisés par la génération. Le retrieval du rapport lit `rag.candidate_k`, `rag.final_k` et `rag.query_model`, tandis que le chatbot lit les valeurs indépendantes sous `assistant.rag`, ainsi que `assistant.rag.session_message_limit`. L’index Chroma et son découpage restent communs sous `rag`. Le frontend affiche les tours successifs et conserve leur représentation dans `localStorage` pour survivre aux changements d’onglet. L’action Nouvelle conversation efface le checkpoint courant, la chronologie locale et crée un nouvel UUID. La mémoire de raisonnement du backend disparaît à chaque redémarrage du processus.
 
 L’agent de synthèse utilise un second graphe sans mémoire : `select → plan → draft_sections → compose → save`. `plan` produit une sortie Pydantic structurée ; le code valide les identifiants, déduplique les affectations et crée `Autres` si nécessaire. `draft_sections` effectue un retrieval et une génération par partie. `compose` assemble le Markdown sans nouvel appel de modèle et `save` utilise un fichier temporaire suivi d’un remplacement atomique.
 
@@ -135,7 +135,7 @@ La synchronisation de développement vers Atlas doit exclure `.git`, `web/node_m
 | Fichier | Responsabilité |
 |---|---|
 | `config/sources.yml` | Catalogue, clés, priorités, taxonomie globale des tags et rétention |
-| `config/ai.yaml` | Ollama, modèles, Chroma, chunking, retrieval et sessions |
+| `config/ai.yaml` | Ollama, modèles, Chroma, chunking, retrievals séparés du rapport et de l’assistant, sessions |
 | `config/prompt.yaml` | Prompts et variables du chatbot, self-query, synthèse et summarizer |
 | `config/telegram.yaml` | Activation, destination et taille du résumé Telegram |
 | `docker-compose.yml` | Images, volumes, ports, secrets injectés et mémoire |

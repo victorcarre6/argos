@@ -6,13 +6,19 @@ assistant:
   url: http://192.168.1.11:11434
   model: qwen3.6:27b
   timeout_seconds: 180
+  # Retrieval propre au chatbot multi-tour.
+  rag:
+    candidate_k: 24
+    final_k: 6
+    query_model: ""
+    session_message_limit: 12
+# Index Chroma partagé et retrieval utilisé pour générer le rapport.
 rag:
   chroma_path: /app/data/chroma
   index_limit: 2000
   candidate_k: 24
   final_k: 6
   query_model: ""
-  session_message_limit: 12
   split_min_chars: 900
   chunk_size: 1200
   chunk_overlap: 180

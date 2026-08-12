@@ -80,7 +80,9 @@ Quand le rescoring ne change que les métadonnées, l’indexeur met à jour dir
 
 `rag/retrieve.py` demande d’abord à ChatOllama un objet `QueryPlan`. Le modèle peut extraire une requête libre ainsi que des catégories, sources, clés, priorités, bornes de date et score minimal. Toutes les listes sont ensuite recoupées avec le catalogue ; une valeur inventée est rejetée. Si la planification échoue, la question brute reste utilisable sans filtre.
 
-Chroma retourne les 24 chunks les plus proches par similarité vectorielle. Ils sont consommés directement dans cet ordre, sans second appel de reranking. Un seul chunk par article est retenu, jusqu’à 6 articles. Ce pipeline réduit la latence sur Nyx et évite un appel LLM supplémentaire par question.
+Le même index Chroma sert deux profils de retrieval. La rédaction du rapport utilise `rag.candidate_k`, `rag.final_k` et `rag.query_model`. Le chatbot passe explicitement le profil `assistant` et remplace ces trois valeurs par celles de `assistant.rag`. Les valeurs de référence actuelles sont respectivement 10 candidats, 4 articles finaux et `qwen3.6:35b-a3b` pour les deux profils, mais elles peuvent désormais évoluer indépendamment. Les candidats sont consommés directement dans l’ordre de similarité, sans second appel de reranking, et un seul chunk par article est retenu.
+
+Le reste de `rag` décrit l’infrastructure commune : chemin Chroma, volume maximal indexé et découpage des documents. Un ancien `ai.yaml` sans `assistant.rag` reste valide ; le loader hérite alors de `candidate_k`, `final_k` et `query_model` depuis `rag`, avec 12 messages de session par défaut.
 
 ## 7. Agent LangGraph et sessions
 
@@ -92,7 +94,7 @@ START → retrieve → generate → END
 
 Le nœud `retrieve` construit le contexte courant. Le nœud `generate` ajoute une instruction système imposant le français, l’usage exclusif du contexte et les citations numérotées, puis appelle `qwen3.6:27b` avec les messages récents.
 
-Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `session_id`. LangGraph utilise cet identifiant comme `thread_id`; `InMemorySaver` sépare les conversations et `session_message_limit` limite à 12 les messages relus par la génération. L’interface inspirée de NEXUS affiche chaque question et réponse dans une chronologie en bulles de 42 rem de haut, garde la saisie au bas du panneau et défile vers le dernier tour. La chronologie visible est aussi enregistrée dans `localStorage`, ce qui évite sa disparition lorsque React démonte la vue pendant un changement d’onglet. Cette copie ne remplace pas le checkpoint : Nouvelle conversation appelle `DELETE /api/assistant/session/<session_id>`, efface l’affichage et renouvelle l’UUID. Les checkpoints ne survivent pas au redémarrage : une persistance durable reste au backlog.
+Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `session_id`. LangGraph utilise cet identifiant comme `thread_id`; `InMemorySaver` sépare les conversations et `assistant.rag.session_message_limit` borne les messages relus par la génération. L’interface inspirée de NEXUS affiche chaque question et réponse dans une chronologie en bulles de 42 rem de haut, garde la saisie au bas du panneau et défile vers le dernier tour. La chronologie visible est aussi enregistrée dans `localStorage`, ce qui évite sa disparition lorsque React démonte la vue pendant un changement d’onglet. Cette copie ne remplace pas le checkpoint : Nouvelle conversation appelle `DELETE /api/assistant/session/<session_id>`, efface l’affichage et renouvelle l’UUID. Les checkpoints ne survivent pas au redémarrage : une persistance durable reste au backlog.
 
 ## 8. Agent de synthèse P1
 

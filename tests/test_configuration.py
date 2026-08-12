@@ -40,6 +40,23 @@ class ConfigurationTest(unittest.TestCase):
         self.assertEqual("custom", config["assistant"]["model"])
         self.assertEqual(180, config["assistant"]["timeout_seconds"])
         self.assertEqual(24, config["rag"]["candidate_k"])
+        self.assertEqual(24, config["assistant"]["rag"]["candidate_k"])
+        self.assertEqual(12, config["assistant"]["rag"]["session_message_limit"])
+
+    def test_assistant_rag_settings_are_independent_from_report_rag(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ai.yaml"
+            path.write_text(
+                "rag:\n  candidate_k: 10\n  final_k: 4\n"
+                "assistant:\n  rag:\n    candidate_k: 30\n    final_k: 8\n",
+                encoding="utf-8",
+            )
+            with patch.object(settings, "AI_CONFIG_PATH", path):
+                config = settings.load_ai_config()
+        self.assertEqual(10, config["rag"]["candidate_k"])
+        self.assertEqual(4, config["rag"]["final_k"])
+        self.assertEqual(30, config["assistant"]["rag"]["candidate_k"])
+        self.assertEqual(8, config["assistant"]["rag"]["final_k"])
 
     def test_invalid_prompt_configuration_is_not_saved(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
