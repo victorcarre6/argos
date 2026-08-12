@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
@@ -224,6 +225,13 @@ class BackendStructureTest(unittest.TestCase):
                 "/api/viz/semantic-map",
             }.isdisjoint(routes)
         )
+
+    def test_assistant_session_can_be_explicitly_cleared(self) -> None:
+        with patch("rag.routes.clear_session") as clear_session:
+            response = self.client.delete("/api/assistant/session/conversation-1")
+        self.assertEqual(200, response.status_code)
+        self.assertEqual({"status": "deleted"}, response.get_json())
+        clear_session.assert_called_once_with("conversation-1")
 
     def test_article_can_be_hidden_without_being_deleted(self) -> None:
         with connect() as connection:

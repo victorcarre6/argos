@@ -308,3 +308,10 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 
 - Renommage de `AI Summary` en `Dernier rapport` sur Homepage.
 - Ajout d’un bouton téléchargeant le dernier Markdown avec son nom daté `report_YYMMDD_HHMM.md` via une route fixe.
+
+## 12/08 09:50 — Interface de chat multi-tour
+
+- Reprise des principes de l’interface NEXUS : chronologie en bulles, zone de saisie fixe, défilement automatique et raccourci Entrée/Maj + Entrée.
+- Remplacement de la réponse unique par tous les tours utilisateur/assistant, associés au même `session_id` LangGraph.
+- Hauteur du chat portée à 42 rem, soit environ trois fois la carte précédente, et conservation de la chronologie dans le navigateur lors des changements d’onglet.
+- Ajout d’une action Nouvelle conversation qui efface le checkpoint backend et renouvelle la session locale.

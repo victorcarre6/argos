@@ -11,6 +11,7 @@
 
 ## Réalisé
 
+- [DONE] 12/08 — Transformer Assistants en véritable interface de chat multi-tour inspirée de NEXUS, avec une hauteur triplée.
 - [DONE] 12/08 — Permettre le téléchargement du dernier rapport daté depuis Homepage.
 - [DONE] 12/08 — Condenser chaque rapport avec un agent dédié avant son envoi en un message Telegram sans Markdown.
 - [DONE] 12/08 — Archiver les synthèses sous `report_YYMMDD_HHMM.md` et charger automatiquement la plus récente.

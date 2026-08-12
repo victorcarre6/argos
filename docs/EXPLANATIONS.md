@@ -92,7 +92,7 @@ START → retrieve → generate → END
 
 Le nœud `retrieve` construit le contexte courant. Le nœud `generate` ajoute une instruction système imposant le français, l’usage exclusif du contexte et les citations numérotées, puis appelle `qwen3.6:27b` avec les messages récents.
 
-Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `session_id`. LangGraph utilise cet identifiant comme `thread_id`; `InMemorySaver` sépare les conversations et `session_message_limit` limite à 12 les messages relus par la génération. La suppression explicite passe par `DELETE /api/assistant/session/<session_id>`. Les checkpoints ne survivent pas au redémarrage : une persistance durable reste au backlog.
+Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `session_id`. LangGraph utilise cet identifiant comme `thread_id`; `InMemorySaver` sépare les conversations et `session_message_limit` limite à 12 les messages relus par la génération. L’interface inspirée de NEXUS affiche chaque question et réponse dans une chronologie en bulles de 42 rem de haut, garde la saisie au bas du panneau et défile vers le dernier tour. La chronologie visible est aussi enregistrée dans `localStorage`, ce qui évite sa disparition lorsque React démonte la vue pendant un changement d’onglet. Cette copie ne remplace pas le checkpoint : Nouvelle conversation appelle `DELETE /api/assistant/session/<session_id>`, efface l’affichage et renouvelle l’UUID. Les checkpoints ne survivent pas au redémarrage : une persistance durable reste au backlog.
 
 ## 8. Agent de synthèse P1
 
