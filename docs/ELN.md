@@ -329,7 +329,39 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 
 ## 12/08 10:23 — Réparation des flux AAP
 
-- Conservation du catalogue Atlas récupéré par l’utilisateur, qui contient désormais 129 sources, sans réintroduire les cinq entrées qu’il avait retirées.
+- Conservation du catalogue Atlas récupéré par l’utilisateur, ensuite ramené à 126 sources actives par ses modifications, sans réintroduire les entrées retirées.
 - Remplacement des sept pages HTML ou endpoints RSS obsolètes de la catégorie financements ; les huit sources sont maintenant actives.
 - Validation directe par `fetch_source` des flux officiels ANR, EIC, HaDEA, REA, Commission R&I, EuroHPC, UKRI et NSF : HTTP 200, aucune erreur et 15 à 20 entrées sur la fenêtre historique de contrôle.
 - Avec la fenêtre opérationnelle de sept jours, EIC, HaDEA, Commission R&I, UKRI et NSF fournissaient des éléments récents ; ANR, EuroHPC et REA restaient sains mais sans publication assez récente au moment du test.
+
+## 12/08 10:35 — Pipeline de rapport accélérée et Telegram borné
+
+- Suppression de la planification thématique et des générations section par section : un retrieval global et une rédaction unique remplacent jusqu’à onze appels Nyx par deux maximum.
+- Conservation de la sélection P1, du seuil basé sur le dernier rapport, du contexte Chroma, des références déterministes et de l’archivage daté.
+- En cas de dépassement Telegram, seconde condensation sur le premier résumé ; cette première approche de coupe déterministe a ensuite été remplacée par le budget natif documenté ci-dessous.
+- Le résumé reste destiné à un artefact mono-message ; un modèle qui dépasse trois budgets successifs produit une erreur explicite.
+
+## 12/08 10:45 — Budget de sortie natif du summarizer
+
+- Ajout de `summarizer.max_output_tokens=800` dans `ai.yaml` et son exemple.
+- Traduction de ce réglage générique vers `ChatOllama.num_predict`, paramètre natif de génération Ollama.
+- Suppression de la troncature applicative ; les dépassements résiduels sont réécrits par Nyx avec la moitié puis le tiers du budget initial.
+- Conservation de `telegram.max_message_chars` comme validation finale, car une limite de tokens ne garantit pas une longueur exacte en caractères.
+
+## 12/08 10:55 — Réponses vides du summarizer Qwen
+
+- Identification du budget `num_predict` consommé par le raisonnement interne comme cause probable de `response.content` vide.
+- Ajout de `summarizer.reasoning=false`, transmis au champ natif `ChatOllama.reasoning` uniquement pour cet agent.
+- Une réponse vide ne bloque plus au premier essai : le summarizer effectue jusqu’à trois tentatives avant de produire une erreur explicite.
+
+## 12/08 11:22 — Rapport Homepage et heure de Paris
+
+- Passage des nouveaux noms `report_YYMMDD_HHMM.md`, titres Markdown et titres Telegram au fuseau `Europe/Paris`, avec gestion automatique CET/CEST.
+- Compatibilité des archives UTC existantes grâce à la lecture de l’horodatage ISO intégré au rapport avant conversion locale.
+- Ajout de `Cache-Control: no-store` à `/api/summary` pour empêcher Homepage de conserver une ancienne réponse.
+- La réponse JSON expose désormais `filename`, permettant d’identifier précisément l’archive effectivement chargée.
+
+## 12/08 11:30 — Raccourci vers l’accueil Atlas
+
+- Ajout d’un bouton maison gris à droite de l’icône Argos dans l’en-tête.
+- Le lien ouvre `http://192.168.1.50:3141` dans un nouvel onglet avec un libellé accessible.

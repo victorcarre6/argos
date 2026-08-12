@@ -101,9 +101,9 @@ class SourcesConfigTest(unittest.TestCase):
             ],
             [category["name"] for category in self.config["categories"]],
         )
-        self.assertEqual(129, len(self.sources))
+        self.assertEqual(126, len(self.sources))
         self.assertEqual(
-            127,
+            126,
             sum(source.get("enabled", True) is not False for source in self.sources),
         )
         source_urls = {source["url"] for source in self.sources}
@@ -119,7 +119,6 @@ class SourcesConfigTest(unittest.TestCase):
             "https://cyber.gouv.fr/actualites/rss/",
             "https://www.cert.ssi.gouv.fr/feed/",
             "https://www.cnil.fr/fr/rss.xml",
-            "https://www.enisa.europa.eu/news/enisa-news/RSS",
             "https://eurohpc-ju.europa.eu/node/205/rss_en",
             "https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml",
         }
@@ -152,8 +151,6 @@ class SourcesConfigTest(unittest.TestCase):
         for name, url in repaired.items():
             self.assertEqual(url, by_name[name]["url"])
             self.assertIsNot(False, by_name[name].get("enabled", True))
-        for name in {"ENISA News", "OECD AI"}:
-            self.assertIs(False, by_name[name].get("enabled"))
 
     def test_funding_sources_use_the_eight_validated_official_feeds(self) -> None:
         category = next(

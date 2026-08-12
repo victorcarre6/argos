@@ -16,13 +16,9 @@ os.environ.setdefault(
 from feeds.collection import _refresh_ai_outputs  # noqa: E402
 from feeds.database import connect, initialize  # noqa: E402
 from rag.summary_agent import (  # noqa: E402
-    PlannedSection,
-    SummaryPlan,
     _build_graph,
-    _fallback_plan,
-    _normalize_plan,
     _new_p1_signals,
-    _plan_node,
+    _draft_node,
     _references_markdown,
     _source_block,
 )
@@ -33,23 +29,6 @@ class SummaryAgentTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         initialize()
 
-    def test_plan_keeps_every_signal_in_at_most_five_sections(self) -> None:
-        signals = [{"id": str(index)} for index in range(7)]
-        plan = SummaryPlan(
-            sections=[
-                PlannedSection(title=f"Thème {index}", signal_ids=[str(index)])
-                for index in range(5)
-            ]
-        )
-        sections = _normalize_plan(plan, signals)
-        assigned = [
-            signal_id for section in sections for signal_id in section["signal_ids"]
-        ]
-        self.assertLessEqual(len(sections), 5)
-        self.assertEqual({str(index) for index in range(7)}, set(assigned))
-        self.assertEqual(len(assigned), len(set(assigned)))
-        self.assertEqual("Autres", sections[-1]["title"])
-
     def test_context_distinguishes_new_and_related_signals(self) -> None:
         new = [{"title": "Nouveau", "source": "A", "url": "u1", "summary": "s"}]
         related = [{"title": "Ancien", "source": "B", "url": "u2", "summary": "s"}]
@@ -59,40 +38,6 @@ class SummaryAgentTest(unittest.TestCase):
         references = _references_markdown(new, related)
         self.assertIn("[1] [Nouveau](u1)", references)
         self.assertIn("[2] [Ancien](u2)", references)
-
-    def test_fallback_plan_keeps_all_signals_in_at_most_five_sections(self) -> None:
-        signals = [
-            {"id": str(index), "category": f"Catégorie {index}"} for index in range(7)
-        ]
-        sections = _fallback_plan(signals)
-        self.assertEqual(5, len(sections))
-        self.assertEqual("Autres", sections[-1]["title"])
-        self.assertEqual(
-            {signal["id"] for signal in signals},
-            {signal_id for section in sections for signal_id in section["signal_ids"]},
-        )
-
-    def test_invalid_structured_output_uses_fallback_plan(self) -> None:
-        signals = [
-            {
-                "id": "1",
-                "title": "Signal",
-                "source": "Source",
-                "category": "Frameworks",
-                "summary": "Résumé",
-            }
-        ]
-        planner = Mock()
-        planner.invoke.side_effect = ValueError("Invalid json output")
-        model = Mock()
-        model.with_structured_output.return_value = planner
-        with (
-            patch("rag.summary_agent.chat_model", return_value=model),
-            patch("rag.summary_agent.load_prompt", return_value="instruction"),
-        ):
-            result = _plan_node({"signals": signals})
-        self.assertEqual("fallback", result["planning_mode"])
-        self.assertEqual(["1"], result["sections"][0]["signal_ids"])
 
     def test_selection_keeps_only_the_forty_most_recent_publications(self) -> None:
         with connect() as connection:
@@ -145,6 +90,37 @@ class SummaryAgentTest(unittest.TestCase):
             result = _build_graph().invoke({})
         self.assertEqual([], result["signals"])
         self.assertNotIn("document", result)
+
+    def test_report_is_written_with_one_global_retrieval_and_one_generation(
+        self,
+    ) -> None:
+        signals = [
+            {
+                "id": "1",
+                "title": "Signal A",
+                "source": "Source",
+                "url": "https://example.com/a",
+                "summary": "Résumé A",
+            },
+            {
+                "id": "2",
+                "title": "Signal B",
+                "source": "Source",
+                "url": "https://example.com/b",
+                "summary": "Résumé B",
+            },
+        ]
+        model = Mock()
+        model.invoke.return_value.content = "Analyse globale."
+        with (
+            patch("rag.summary_agent.retrieve", return_value=[]) as retrieve,
+            patch("rag.summary_agent.chat_model", return_value=model),
+            patch("rag.summary_agent.load_prompt", return_value="instruction"),
+        ):
+            result = _draft_node({"signals": signals})
+        retrieve.assert_called_once()
+        model.invoke.assert_called_once_with("instruction")
+        self.assertEqual("Points clés", result["drafts"][0]["title"])
 
     def test_summary_runs_only_after_successful_indexing(self) -> None:
         errors = []

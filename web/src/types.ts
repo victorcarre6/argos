@@ -60,6 +60,7 @@ export type Stats = {
 export type SummaryDocument = {
   content: string;
   updated_at: string | null;
+  filename?: string | null;
 };
 
 export type AsyncState = {
@@ -76,7 +77,7 @@ export type AsyncState = {
       generated: boolean;
       signals: number;
       sections: number;
-      planning_mode: "llm" | "fallback" | null;
+      planning_mode: "deterministic" | null;
       path: string;
     } | null;
     summarizer?: {

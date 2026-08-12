@@ -11,13 +11,17 @@
 
 ## Réalisé
 
+- [DONE] 12/08 — Charger sans cache le dernier rapport sur Homepage et dater les nouvelles archives en heure de Paris.
+- [DONE] 12/08 — Désactiver le raisonnement Qwen du summarizer et reprendre automatiquement ses réponses vides.
+- [DONE] 12/08 — Borner nativement la sortie du summarizer via `max_output_tokens` traduit en `num_predict` Ollama.
+- [DONE] 12/08 — Garantir un résumé Telegram borné et réduire la génération du rapport à deux appels Nyx maximum.
 - [DONE] 12/08 — Réactiver les huit sources Appels à projets et financements avec des flux officiels validés.
 - [DONE] 12/08 — Séparer les paramètres de retrieval du rapport et de l’assistant dans `ai.yaml`.
 - [DONE] 12/08 — Transformer Assistants en véritable interface de chat multi-tour inspirée de NEXUS, avec une hauteur triplée.
 - [DONE] 12/08 — Permettre le téléchargement du dernier rapport daté depuis Homepage.
 - [DONE] 12/08 — Condenser chaque rapport avec un agent dédié avant son envoi en un message Telegram sans Markdown.
 - [DONE] 12/08 — Archiver les synthèses sous `report_YYMMDD_HHMM.md` et charger automatiquement la plus récente.
-- [DONE] 12/08 — Borner la synthèse aux 40 P1 publiés les plus récemment, avec seuil configurable.
+- [DONE] 12/08 — Borner la synthèse aux P1 publiés les plus récemment, avec seuil configurable.
 - [DONE] 12/08 — Recentrer les cartes Santé sur cycle, stockage, signaux et état agrégé des sources.
 - [DONE] 12/08 — Afficher les favoris durables sur Homepage et les filtrer dans Flux.
 - [DONE] 11/08 — Normaliser les identifiants de tags globaux en `snake_case` ASCII.

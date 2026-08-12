@@ -88,7 +88,9 @@ class BackendStructureTest(unittest.TestCase):
         self.assertEqual(
             "# Synthèse\n\nSignal important.", response.get_json()["content"]
         )
+        self.assertEqual("summary.md", response.get_json()["filename"])
         self.assertIsNotNone(response.get_json()["updated_at"])
+        self.assertEqual("no-store", response.headers["Cache-Control"])
 
     def test_latest_summary_can_be_downloaded_with_its_filename(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

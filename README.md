@@ -4,7 +4,7 @@ Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA
 
 ## Fonctions principales
 
-- catalogue YAML de 129 sources réparties en 8 catégories, éditable dans l’interface ;
+- catalogue YAML de 126 sources actives réparties en 8 catégories, éditable dans l’interface ;
 - clés thématiques et priorités P1/P2/P3 affichées dans Flux ;
 - taxonomie globale de 18 tags en `snake_case`, filtrables et affichés sur les cartes ;
 - collecte concurrente, normalisation, déduplication et rétention dans SQLite ;
@@ -22,7 +22,7 @@ L’onglet Assistants regroupe le chatbot RAG et l’état non sensible du bot T
 Il décrit aussi les cycles automatiques à partir du fichier timer systemd réellement monté dans l’API, ainsi que la dernière exécution enregistrée.
 Homepage regroupe les quatre métriques de pilotage, les 30 derniers favoris dans une fenêtre de trois cartes et le dernier rapport Markdown de `data/reports/`. Santé présente le dernier cycle, le stockage total, les signaux dont les P1 et l’état agrégé des sources.
 
-Après chaque indexation réussie, un agent LangGraph repère les nouveaux P1, les regroupe en cinq parties maximum, enrichit chaque partie avec le retrieval Chroma puis remplace atomiquement `data/summary.md`. Une panne Nyx conserve le document précédent et reporte les signaux à la prochaine collecte.
+Après chaque indexation réussie, un agent LangGraph repère les nouveaux P1, effectue un retrieval Chroma global puis rédige le rapport en un seul appel Nyx avant de remplacer atomiquement `data/summary.md`. Une panne Nyx conserve le document précédent et reporte les signaux à la prochaine collecte.
 
 ## Architecture
 

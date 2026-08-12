@@ -3,8 +3,11 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 REPORT_NAME = re.compile(r"report_(\d{6})_(\d{4})\.md")
+GENERATED_AT = re.compile(r"Générée le ([^ ]+)")
+REPORT_TIMEZONE = ZoneInfo("Europe/Paris")
 
 
 def reports_directory(summary_path: Path) -> Path:
@@ -12,7 +15,8 @@ def reports_directory(summary_path: Path) -> Path:
 
 
 def report_path(summary_path: Path, generated_at: datetime) -> Path:
-    return reports_directory(summary_path) / generated_at.strftime(
+    local_time = generated_at.astimezone(REPORT_TIMEZONE)
+    return reports_directory(summary_path) / local_time.strftime(
         "report_%y%m%d_%H%M.md"
     )
 
@@ -42,12 +46,20 @@ def report_updated_at(path: Path) -> str:
 
 
 def report_generated_at(path: Path) -> datetime:
+    try:
+        generated = GENERATED_AT.search(path.read_text(encoding="utf-8")[:500])
+        if generated:
+            return datetime.fromisoformat(generated.group(1)).astimezone(
+                REPORT_TIMEZONE
+            )
+    except (OSError, UnicodeError, ValueError):
+        pass
     match = REPORT_NAME.fullmatch(path.name)
     if match:
         return datetime.strptime("".join(match.groups()), "%y%m%d%H%M").replace(
-            tzinfo=timezone.utc
+            tzinfo=REPORT_TIMEZONE
         )
-    return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+    return datetime.fromtimestamp(path.stat().st_mtime, REPORT_TIMEZONE)
 
 
 def telegram_summary_path(summary_path: Path, report: Path) -> Path:

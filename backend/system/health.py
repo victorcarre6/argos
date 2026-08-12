@@ -67,11 +67,15 @@ def health() -> Any:
 def summary() -> Any:
     report = latest_report_path(SUMMARY_PATH)
     if report is None:
-        return jsonify(content="", updated_at=None)
-    return jsonify(
-        content=report.read_text(encoding="utf-8"),
-        updated_at=report_updated_at(report),
-    )
+        response = jsonify(content="", updated_at=None, filename=None)
+    else:
+        response = jsonify(
+            content=report.read_text(encoding="utf-8"),
+            updated_at=report_updated_at(report),
+            filename=report.name,
+        )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @blueprint.get("/api/summary/download")

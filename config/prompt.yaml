@@ -21,20 +21,12 @@ retrieval:
     Question: {question}
 
 summary:
-  plan: |-
-    Regroupe ces nouveaux signaux P1 en parties thématiques. Crée au maximum cinq
-    parties. Utilise une cinquième partie nommée exactement « Autres » si
-    nécessaire. Chaque identifiant doit apparaître une seule fois.
-    Les titres doivent être courts et informatifs.
-
-    Signaux:
-    {signals}
-
   section: |-
-    Rédige en français une section de synthèse de veille intitulée « {title} ».
+    Rédige en français un rapport de synthèse de veille intitulé « {title} ».
     Analyse chacun des nouveaux signaux P1, explique son importance et rapproche-le
     des signaux antérieurs pertinents. N'invente aucun fait. Cite les références
-    avec [1], [2], etc. Retourne uniquement le corps Markdown de la section, sans
+    avec [1], [2], etc. Regroupe les observations en paragraphes thématiques courts.
+    Retourne uniquement le corps Markdown du rapport, sans
     répéter son titre.
 
     Références:

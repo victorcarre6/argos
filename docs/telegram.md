@@ -23,7 +23,7 @@ curl --fail -X POST http://127.0.0.1:1207/api/refresh
 docker compose logs --since 10m api
 ```
 
-`max_message_chars` fixe la taille maximale du message complet (3 900 par défaut, plafonnée à 4 000). Le summarizer reçoit cette contrainte et Argos refuse une sortie trop longue au lieu de la tronquer ou de la découper. `bot_token_env` désigne la variable d’environnement contenant le token.
+`summarizer.max_output_tokens` dans `config/ai.yaml` fixe le budget de génération et est transmis à Ollama sous le nom natif `num_predict`. `summarizer.reasoning` vaut `false` afin que Qwen réserve ce budget au contenu final ; ce réglage évite une réponse vide après un raisonnement ayant consommé tous les tokens. `max_message_chars` dans `config/telegram.yaml` fixe séparément la taille maximale du message complet (3 900 par défaut, plafonnée à 4 000). Si cette validation échoue ou si la réponse est vide, Nyx réessaie jusqu’à trois fois avec un budget réduit ; Argos ne tronque pas le texte. `bot_token_env` désigne la variable d’environnement contenant le token.
 
 ## Reprise après erreur
 

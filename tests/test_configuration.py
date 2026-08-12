@@ -42,6 +42,8 @@ class ConfigurationTest(unittest.TestCase):
         self.assertEqual(24, config["rag"]["candidate_k"])
         self.assertEqual(24, config["assistant"]["rag"]["candidate_k"])
         self.assertEqual(12, config["assistant"]["rag"]["session_message_limit"])
+        self.assertEqual(800, config["summarizer"]["max_output_tokens"])
+        self.assertFalse(config["summarizer"]["reasoning"])
 
     def test_assistant_rag_settings_are_independent_from_report_rag(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

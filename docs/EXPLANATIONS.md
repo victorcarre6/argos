@@ -29,7 +29,7 @@ Le vocabulaire contrôlé comporte 14 clés : `recherche`, `LLM`, `IA Agentique`
 
 Les clés et priorités sont résolues depuis le YAML lors de la lecture des articles. Une modification profite donc aussi aux articles existants sans migration SQLite.
 
-Les 129 sources sont organisées en 8 catégories après fusion des familles qui se recouvraient. Le compteur principal utilise le nombre de sources actives calculé depuis ce catalogue ; le nombre de sources distinctes présentes dans SQLite est renvoyé séparément comme `collected_sources`.
+Les 126 sources actives sont organisées en 8 catégories après fusion des familles qui se recouvraient. Le compteur principal utilise le nombre de sources actives calculé depuis ce catalogue ; le nombre de sources distinctes présentes dans SQLite est renvoyé séparément comme `collected_sources`.
 
 La famille Appels à projets et financements n’utilise plus de pages HTML ni les anciens endpoints Drupal `node/1`. Ses huit entrées pointent vers des RSS officiels : le flux AAP dédié de l’ANR, les actualités EIC, HaDEA, REA, Recherche et innovation et EuroHPC, les opportunités UKRI et les annonces de financement NSF. Chaque URL a été exécutée par `feeds.collection.fetch_source` : elles répondent toutes en HTTP 200, sont parsées sans erreur et fournissent 15 à 20 entrées sur une fenêtre historique de validation. La fenêtre opérationnelle de sept jours peut légitimement produire zéro article lorsqu’un organisme n’a rien publié récemment sans rendre la source défaillante.
 
@@ -103,27 +103,25 @@ Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `sessio
 Après `sync_index()`, `rag/summary_agent.py` exécute un second `StateGraph` :
 
 ```text
-START → select → plan → draft_sections → compose → save → END
-                 └──────── aucun nouveau P1 ───────────→ END
+START → select → draft_sections → compose → save → END
+                 └──── aucun nouveau P1 ──────────────→ END
 ```
 
-`select` croise les sources P1 actives du YAML avec les articles visibles, uniques et apparus après la date de modification du dernier rapport archivé. Les archives valides suivent `data/reports/report_YYMMDD_HHMM.md` en UTC et sont ordonnées par leur nom ISO compact. Avant la première archive, `data/summary.md` fournit le seuil historique ; en l’absence de tout document, la fenêtre initiale reprend `collection.max_age_days`. Le seuil emploie le `mtime` précis du fichier sélectionné plutôt que la minute tronquée dans son nom. Une erreur avant `save` laisse ainsi la borne intacte et les mêmes P1 sont repris au prochain passage.
+`select` croise les sources P1 actives du YAML avec les articles visibles, uniques et apparus après la date de modification du dernier rapport archivé. Les archives valides suivent `data/reports/report_YYMMDD_HHMM.md` en heure `Europe/Paris` et sont ordonnées par leur nom ISO compact. Avant la première archive, `data/summary.md` fournit le seuil historique ; en l’absence de tout document, la fenêtre initiale reprend `collection.max_age_days`. Le seuil emploie le `mtime` précis du fichier sélectionné plutôt que la minute tronquée dans son nom. Une erreur avant `save` laisse ainsi la borne intacte et les mêmes P1 sont repris au prochain passage.
 
-`select` classe les candidats par `published_at` décroissant, avec `collected_at` comme date de repli, puis conserve les `summary.top_n` premiers (`40` par défaut dans `config/ai.yaml`). `plan` transmet à ChatOllama leurs identifiants SHA-256, titres, sources, catégories et résumés courts. La sortie `SummaryPlan` contient au plus cinq groupes. Une normalisation déterministe rejette les identifiants inventés et doublons, puis verse tous les éléments restants dans `Autres`, quitte à fusionner la cinquième partie proposée. `planning_mode` vaut `llm` ou `fallback` lorsque la sortie structurée est invalide.
+`select` classe les candidats par `published_at` décroissant, avec `collected_at` comme date de repli, puis conserve les `summary.top_n` premiers. `draft_sections` construit une requête globale à partir de tous leurs titres, exécute une seule fois le retrieval self-query du rapport, puis transmet à Nyx les nouveaux signaux et le contexte antérieur retrouvé. Le modèle rédige le rapport complet en un appel au lieu d’un appel de planification suivi de deux appels par partie. Le maximum passe ainsi de onze appels Nyx à deux : planification du retrieval incluse, puis rédaction.
 
-Si Nyx renvoie une sortie structurée qui n’est pas un JSON valide, la pipeline ne s’arrête pas. Un plan de repli déterministe regroupe alors les signaux par catégorie, conserve au plus quatre catégories explicites et rassemble le reste dans `Autres`. Le bilan de collecte expose `planning_mode: fallback`; tous les signaux restent traités et le rapport peut être sauvegardé puis envoyé.
+Le prompt distingue les références `NOUVEAU` des références `CONTEXTE`, exige une discussion de chaque P1 et des citations numérotées. Une liste Markdown déterministe associe ensuite chaque numéro à son titre, son URL, sa source et son rôle. `compose` date le titre en heure de Paris. `save` remplace atomiquement l’archive datée, puis `data/summary.md`, conservé comme copie de compatibilité. Pour interpréter correctement les anciennes archives nommées en UTC, le résolveur lit en priorité l’horodatage ISO inclus dans leur contenu et le convertit en heure de Paris. Lors de l’initialisation SQLite, les anciens articles sans `first_seen_at` sont backfillés depuis `collected_at` afin qu’un simple refetch ne les fasse pas passer pour de nouveaux signaux.
 
-Pour chaque partie, `draft_sections` appelle le même retrieval self-query que le chatbot. Le prompt distingue les références `NOUVEAU` des références `CONTEXTE`, exige une discussion de chaque P1 et des citations numérotées. Une liste Markdown déterministe associe ensuite chaque numéro à son titre, son URL, sa source et son rôle. `compose` assemble directement les corps et date le titre en UTC. `save` remplace atomiquement l’archive datée, puis `data/summary.md`, conservé comme copie de compatibilité. Lors de l’initialisation SQLite, les anciens articles sans `first_seen_at` sont backfillés depuis `collected_at` afin qu’un simple refetch ne les fasse pas passer pour de nouveaux signaux.
-
-Une fois le rapport complet sauvegardé, `rag/summarizer.py` exécute le graphe `load → summarize → save`. Il transmet le rapport entier à Nyx avec une limite calculée depuis `telegram.max_message_chars`, nettoie les marqueurs Markdown, URL et références résiduels, ajoute le titre déterministe `Rapport DD-MM HH:MM`, puis refuse toute sortie vide ou trop longue. L’artefact `telegram_YYMMDD_HHMM.txt` est remplacé atomiquement et réutilisé s’il correspond déjà au dernier rapport.
+Une fois le rapport complet sauvegardé, `rag/summarizer.py` exécute le graphe `load → summarize → save`. La clé générique `summarizer.max_output_tokens` de `ai.yaml` est traduite en `num_predict`, le paramètre natif de `ChatOllama`, afin de borner la génération dès l’inférence. Le summarizer passe également `reasoning=false` : avec Qwen, le raisonnement peut sinon épuiser `num_predict` et laisser `response.content` vide. Ce réglage ne concerne ni le chatbot ni le rapport complet. Le texte est ensuite nettoyé des marqueurs Markdown, URL et références résiduels et reçoit le titre déterministe `Rapport DD-MM HH:MM`. `telegram.max_message_chars` reste une contrainte distincte puisque tokens et caractères ne sont pas équivalents. Si elle est dépassée, le résumé devient l’entrée d’une nouvelle génération avec la moitié puis le tiers du budget initial. Une réponse vide est elle aussi réessayée jusqu’à trois fois. Après trois échecs, une erreur explicite est produite ; aucune troncature applicative ne dégrade la fin du texte. `telegram_YYMMDD_HHMM.txt` est remplacé atomiquement et réutilisé s’il correspond déjà au dernier rapport.
 
 `system/telegram.py` ne lit que cet artefact condensé et l’envoie en un appel, sans `parse_mode`. L’empreinte `data/summary.telegram.sha256` n’est remplacée atomiquement qu’après cet envoi réussi. Si l’envoi échoue, le résumé reste en attente et le prochain cycle le retente sans nouvel appel LLM. Une empreinte déjà livrée empêche le renvoi.
 
 ## 9. Configuration des prompts
 
-`config/prompt.yaml` centralise les instructions auparavant dispersées dans les modules Python : système du chatbot, planification du self-query, regroupement P1, rédaction d’une section et condensation Telegram. `rag/prompts.py` recharge le YAML à chaque appel, sélectionne le gabarit et applique `str.format` avec les seules données préparées par le code.
+`config/prompt.yaml` centralise les instructions auparavant dispersées dans les modules Python : système du chatbot, planification du self-query, rédaction du rapport et condensation Telegram. `rag/prompts.py` recharge le YAML à chaque appel, sélectionne le gabarit et applique `str.format` avec les seules données préparées par le code.
 
-Le validateur impose les entrées et variables exactes : `{context}`, `{categories, sources, keys, question}`, `{signals}` et `{title, references}`. Une édition invalide via Config reçoit HTTP 400 et ne remplace pas le fichier courant. Le YAML reste un réglage opérationnel : les schémas Pydantic, la normalisation des groupes, le retrieval et la sauvegarde atomique restent dans le code.
+Le validateur impose les entrées et variables exactes : `{context}`, `{categories, sources, keys, question}`, `{title, references}` et `{max_chars, report}`. Une édition invalide via Config reçoit HTTP 400 et ne remplace pas le fichier courant. Le YAML reste un réglage opérationnel : le retrieval et la sauvegarde atomique restent dans le code.
 
 ## 10. API utile
 
@@ -131,7 +129,7 @@ Le validateur impose les entrées et variables exactes : `{context}`, `{categori
 |---|---|
 | `GET /api/health` | Healthcheck léger du backend |
 | `GET /api/health/app` | Stockage persistant total, volumes de signaux, santé de Nyx, Telegram et de l’index RAG |
-| `GET /api/summary` | Contenu et date de modification du dernier rapport daté |
+| `GET /api/summary` | Contenu, nom et date de modification du dernier rapport daté, sans cache HTTP |
 | `GET /api/summary/download` | Téléchargement du dernier rapport avec son nom daté |
 | `GET/POST /api/refresh` | État ou démarrage de la collecte |
 | `GET /api/articles` | Articles filtrés et enrichis depuis le catalogue |

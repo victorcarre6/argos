@@ -110,4 +110,9 @@ def load_ai_config() -> dict[str, Any]:
         "summary",
         {"top_n": 40},
     )
+    config["summarizer"] = _section_with_defaults(
+        config,
+        "summarizer",
+        {"max_output_tokens": 800, "reasoning": False},
+    )
     return config

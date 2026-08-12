@@ -26,7 +26,7 @@ class PromptConfigurationTest(unittest.TestCase):
         config = {
             "assistant": {"system": "Sans variable"},
             "retrieval": {"query_plan": "{question}"},
-            "summary": {"plan": "{signals}", "section": "{title} {references}"},
+            "summary": {"section": "{title} {references}"},
             "summarizer": {"telegram": "{max_chars} {report}"},
         }
         errors = validate_prompt_config(config)

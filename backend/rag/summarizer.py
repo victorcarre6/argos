@@ -12,7 +12,7 @@ from system.reports import (
     report_generated_at,
     telegram_summary_path,
 )
-from system.settings import SUMMARY_PATH
+from system.settings import SUMMARY_PATH, load_ai_config
 
 
 class SummarizerState(TypedDict, total=False):
@@ -78,16 +78,40 @@ def _summarize_node(state: SummarizerState) -> SummarizerState:
     instruction = load_prompt(
         "summarizer", "telegram", max_chars=body_limit, report=state["report"]
     )
-    response = chat_model().invoke(instruction)
-    body = _clean_body(str(response.content).strip())
-    content = f"{state['title']}\n\n{body}"
-    if not body:
-        raise RuntimeError("Nyx a produit un résumé Telegram vide")
+    config = load_ai_config()["summarizer"]
+    max_output_tokens = max(1, int(config["max_output_tokens"]))
+    reasoning = bool(config.get("reasoning", False))
+    content = ""
+    for attempt in range(3):
+        token_budget = max(1, max_output_tokens // (attempt + 1))
+        response = chat_model(
+            max_output_tokens=token_budget, reasoning=reasoning
+        ).invoke(instruction)
+        body = _clean_body(str(response.content).strip())
+        if not body:
+            if attempt < 2:
+                _progress(
+                    f"Réponse vide, nouvelle tentative ({attempt + 2}/3)",
+                    attempt + 2,
+                    4,
+                )
+                continue
+            raise RuntimeError(
+                "Nyx a produit trois réponses Telegram vides malgré reasoning=false"
+            )
+        content = f"{state['title']}\n\n{body}"
+        if len(content) <= state["max_chars"]:
+            break
+        if attempt < 2:
+            _progress(f"Condensation supplémentaire ({attempt + 2}/3)", attempt + 2, 4)
+        instruction = load_prompt(
+            "summarizer", "telegram", max_chars=body_limit, report=body
+        )
     if len(content) > state["max_chars"]:
         raise RuntimeError(
-            f"Le résumé Telegram dépasse la limite ({len(content)}/{state['max_chars']})"
+            "Nyx n'a pas respecté la limite Telegram après trois condensations"
         )
-    _progress("Rapport condensé pour Telegram", 2, 3)
+    _progress("Rapport condensé pour Telegram", 3, 4)
     return {"content": content}
 
 
@@ -99,7 +123,7 @@ def _save_node(state: SummarizerState) -> SummarizerState:
     temporary = output.with_suffix(".txt.tmp")
     temporary.write_text(state["content"], encoding="utf-8")
     temporary.replace(output)
-    _progress("Résumé Telegram sauvegardé", 3, 3)
+    _progress("Résumé Telegram sauvegardé", 4, 4)
     return {}
 
 
