@@ -4,7 +4,7 @@ Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA
 
 ## Fonctions principales
 
-- catalogue YAML de 134 sources réparties en 8 catégories, éditable dans l’interface ;
+- catalogue YAML de 129 sources réparties en 8 catégories, éditable dans l’interface ;
 - clés thématiques et priorités P1/P2/P3 affichées dans Flux ;
 - taxonomie globale de 18 tags en `snake_case`, filtrables et affichés sur les cartes ;
 - collecte concurrente, normalisation, déduplication et rétention dans SQLite ;

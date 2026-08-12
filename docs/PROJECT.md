@@ -45,7 +45,7 @@ SQLite est la source de vérité des articles. Chroma est un index dérivé, rec
 
 ## Catalogue de sources
 
-`config/sources.yml` contient actuellement 134 sources réparties en 8 catégories. Leur ordre canonique est : **Aggrégateurs**, **Laboratoires et providers**, **Frameworks et SDK**, **HPC**, **Ops, Cloud et plateformes**, **Sécurité, guardrails et évaluation**, **Appels à projets et financements**, puis **Institutions publiques et politiques**.
+`config/sources.yml` contient actuellement 129 sources réparties en 8 catégories. Leur ordre canonique est : **Aggrégateurs**, **Laboratoires et providers**, **Frameworks et SDK**, **HPC**, **Ops, Cloud et plateformes**, **Sécurité, guardrails et évaluation**, **Appels à projets et financements**, puis **Institutions publiques et politiques**. La catégorie des financements contient huit flux officiels actifs : ANR, EIC, HaDEA, REA, Recherche et innovation de la Commission européenne, EuroHPC JU, UKRI et NSF.
 
 Chaque source définit :
 

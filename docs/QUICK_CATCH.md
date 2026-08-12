@@ -4,8 +4,8 @@
 
 ## État actuel
 
-- 134 sources, 8 catégories, 14 clés contrôlées et priorités P1/P2/P3.
-- 125 sources actives : 21 flux défaillants ont été remplacés par des flux officiels vérifiés ; ENISA, EuroHPC JU, HaDEA et OECD AI restent catalogués mais désactivés faute de RSS/Atom officiel exploitable.
+- 129 sources, 8 catégories, 14 clés contrôlées et priorités P1/P2/P3.
+- 127 sources actives. Les huit entrées Appels à projets et financements utilisent désormais des RSS officiels validés avec le collecteur Argos : ANR, EIC, HaDEA, REA, Recherche et innovation de la Commission européenne, EuroHPC JU, UKRI et NSF. Seules ENISA et OECD AI restent désactivées dans le catalogue courant.
 - Ordre des catégories : agrégateurs, laboratoires/providers, frameworks/SDK, HPC, Ops/cloud, sécurité, financements, institutions.
 - Dans **Flux**, la première ligne conserve catégorie, priorité P1/P2/P3, recherche textuelle et tri. La seconde ajoute une autocomplétion multi-source et un dropdown multi-tag. Les groupes sont cumulatifs ; les sources sélectionnées sont alternatives et tous les tags sélectionnés doivent être présents. Chaque choix devient une pilule verte supprimable.
 - La hauteur des deux champs textuels de filtrage s’adapte au viewport avec `clamp(1.25rem, 4vh, 2.25rem)` sans dépasser leur taille historique.
@@ -28,7 +28,7 @@
 
 Le backend est organisé en `feeds/`, `system/` et `rag/`. `backend/app.py` ne fait que construire l’application et enregistrer les blueprints. Le frontend sépare les vues, composants, types et appels HTTP.
 
-La navigation principale est horizontale : Homepage, Flux, Assistants, Santé et Config. **Homepage** contient les quatre métriques de pilotage, les favoris durables et le dernier rapport, téléchargeable avec son nom daté. **Assistants** affiche un chat multi-tour de 42 rem de haut, l’état de livraison Telegram et une vue concise des cycles. Chaque question et réponse reste visible dans une chronologie en bulles ; Entrée envoie, Maj + Entrée ajoute une ligne et Nouvelle conversation efface la session courante. La chronologie d’affichage est conservée dans le navigateur entre les changements d’onglet. **Config** possède les sous-onglets Sources et YAML ; le second édite `sources.yml`, `ai.yaml`, `prompt.yaml` et `telegram.yaml`, puis permet de vider SQLite ou Chroma après confirmation textuelle. Ne pas utiliser ces boutons comme mécanisme de maintenance ordinaire : SQLite contient les données de référence.
+La navigation principale est horizontale : Homepage, Flux, Assistants, Santé et Config. **Homepage** contient les quatre métriques de pilotage, les favoris durables et le dernier rapport, téléchargeable avec son nom daté depuis le bouton aligné sur son titre. **Assistants** affiche un chat multi-tour de 42 rem de haut, l’état de livraison Telegram et une vue concise des cycles. Chaque question et réponse reste visible dans une chronologie en bulles ; Entrée envoie, Maj + Entrée ajoute une ligne et Nouvelle conversation efface la session courante. La chronologie d’affichage est conservée dans le navigateur entre les changements d’onglet. **Config** possède les sous-onglets Sources et YAML ; le second édite `sources.yml`, `ai.yaml`, `prompt.yaml` et `telegram.yaml`, puis permet de vider SQLite ou Chroma après confirmation textuelle. Ne pas utiliser ces boutons comme mécanisme de maintenance ordinaire : SQLite contient les données de référence.
 
 Les prompts LLM sont tous dans `config/prompt.yaml` : `assistant.system`, `retrieval.query_plan`, `summary.plan`, `summary.section` et `summarizer.telegram`. Leur sauvegarde depuis Config vérifie les cinq gabarits et l’ensemble exact de leurs placeholders avant remplacement.
 

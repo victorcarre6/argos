@@ -101,9 +101,9 @@ class SourcesConfigTest(unittest.TestCase):
             ],
             [category["name"] for category in self.config["categories"]],
         )
-        self.assertEqual(134, len(self.sources))
+        self.assertEqual(129, len(self.sources))
         self.assertEqual(
-            125,
+            127,
             sum(source.get("enabled", True) is not False for source in self.sources),
         )
         source_urls = {source["url"] for source in self.sources}
@@ -120,7 +120,7 @@ class SourcesConfigTest(unittest.TestCase):
             "https://www.cert.ssi.gouv.fr/feed/",
             "https://www.cnil.fr/fr/rss.xml",
             "https://www.enisa.europa.eu/news/enisa-news/RSS",
-            "https://eurohpc-ju.europa.eu/node/1/rss_en",
+            "https://eurohpc-ju.europa.eu/node/205/rss_en",
             "https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml",
         }
         self.assertLessEqual(expected, source_urls)
@@ -139,7 +139,6 @@ class SourcesConfigTest(unittest.TestCase):
             "EleutherAI Blog": "https://github.com/EleutherAI/gpt-neox/releases.atom",
             "Haystack Blog": "https://github.com/deepset-ai/haystack/releases.atom",
             "KServe Blog": "https://github.com/kserve/kserve/releases.atom",
-            "Keras Blog": "https://github.com/keras-team/keras/releases.atom",
             "Meta AI": "https://engineering.fb.com/feed/",
             "Milvus Blog": "https://github.com/milvus-io/milvus/releases.atom",
             "Mistral AI": "https://github.com/mistralai/client-python/releases.atom",
@@ -153,8 +152,35 @@ class SourcesConfigTest(unittest.TestCase):
         for name, url in repaired.items():
             self.assertEqual(url, by_name[name]["url"])
             self.assertIsNot(False, by_name[name].get("enabled", True))
-        for name in {"ENISA News", "EuroHPC JU", "HaDEA", "OECD AI"}:
+        for name in {"ENISA News", "OECD AI"}:
             self.assertIs(False, by_name[name].get("enabled"))
+
+    def test_funding_sources_use_the_eight_validated_official_feeds(self) -> None:
+        category = next(
+            category
+            for category in self.config["categories"]
+            if category["name"] == "Appels à projets et financements"
+        )
+        expected = {
+            "ANR": "https://anr.fr/rss/?aap",
+            "European Innovation Council": "https://eic.ec.europa.eu/node/2/rss_en",
+            "HaDEA": "https://hadea.ec.europa.eu/node/2/rss_en",
+            "European Research Executive Agency": "https://rea.ec.europa.eu/node/2/rss_en",
+            "Commission européenne — Recherche et innovation": "https://research-and-innovation.ec.europa.eu/node/2/rss_en",
+            "EuroHPC JU": "https://eurohpc-ju.europa.eu/node/205/rss_en",
+            "UK Research and Innovation": "https://www.ukri.org/opportunity/feed/",
+            "US NSF — Funding opportunities": "https://www.nsf.gov/rss/rss_www_funding_pgm_annc_inf.xml",
+        }
+        self.assertEqual(
+            expected,
+            {source["name"]: source["url"] for source in category["sources"]},
+        )
+        self.assertTrue(
+            all(
+                source.get("enabled", True) is not False
+                for source in category["sources"]
+            )
+        )
 
 
 if __name__ == "__main__":

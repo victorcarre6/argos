@@ -11,6 +11,7 @@
 
 ## Réalisé
 
+- [DONE] 12/08 — Réactiver les huit sources Appels à projets et financements avec des flux officiels validés.
 - [DONE] 12/08 — Séparer les paramètres de retrieval du rapport et de l’assistant dans `ai.yaml`.
 - [DONE] 12/08 — Transformer Assistants en véritable interface de chat multi-tour inspirée de NEXUS, avec une hauteur triplée.
 - [DONE] 12/08 — Permettre le téléchargement du dernier rapport daté depuis Homepage.

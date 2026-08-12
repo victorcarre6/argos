@@ -322,3 +322,14 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 - Ajout de `assistant.rag` avec ses propres `candidate_k`, `final_k`, `query_model` et `session_message_limit`.
 - Routage explicite du chatbot vers ce profil, sans modifier le profil du rapport.
 - Compatibilité des anciens YAML : en l’absence de la nouvelle section, l’assistant hérite des limites et du modèle de requête de `rag`.
+
+## 12/08 10:05 — Alignement du téléchargement Homepage
+
+- Neutralisation locale de la marge basse du titre `Dernier rapport` afin de centrer verticalement son bouton de téléchargement.
+
+## 12/08 10:23 — Réparation des flux AAP
+
+- Conservation du catalogue Atlas récupéré par l’utilisateur, qui contient désormais 129 sources, sans réintroduire les cinq entrées qu’il avait retirées.
+- Remplacement des sept pages HTML ou endpoints RSS obsolètes de la catégorie financements ; les huit sources sont maintenant actives.
+- Validation directe par `fetch_source` des flux officiels ANR, EIC, HaDEA, REA, Commission R&I, EuroHPC, UKRI et NSF : HTTP 200, aucune erreur et 15 à 20 entrées sur la fenêtre historique de contrôle.
+- Avec la fenêtre opérationnelle de sept jours, EIC, HaDEA, Commission R&I, UKRI et NSF fournissaient des éléments récents ; ANR, EuroHPC et REA restaient sains mais sans publication assez récente au moment du test.

@@ -29,7 +29,9 @@ Le vocabulaire contrôlé comporte 14 clés : `recherche`, `LLM`, `IA Agentique`
 
 Les clés et priorités sont résolues depuis le YAML lors de la lecture des articles. Une modification profite donc aussi aux articles existants sans migration SQLite.
 
-Les 134 sources sont organisées en 8 catégories après fusion des familles qui se recouvraient. Le compteur principal utilise le nombre de sources actives calculé depuis ce catalogue ; le nombre de sources distinctes présentes dans SQLite est renvoyé séparément comme `collected_sources`.
+Les 129 sources sont organisées en 8 catégories après fusion des familles qui se recouvraient. Le compteur principal utilise le nombre de sources actives calculé depuis ce catalogue ; le nombre de sources distinctes présentes dans SQLite est renvoyé séparément comme `collected_sources`.
+
+La famille Appels à projets et financements n’utilise plus de pages HTML ni les anciens endpoints Drupal `node/1`. Ses huit entrées pointent vers des RSS officiels : le flux AAP dédié de l’ANR, les actualités EIC, HaDEA, REA, Recherche et innovation et EuroHPC, les opportunités UKRI et les annonces de financement NSF. Chaque URL a été exécutée par `feeds.collection.fetch_source` : elles répondent toutes en HTTP 200, sont parsées sans erreur et fournissent 15 à 20 entrées sur une fenêtre historique de validation. La fenêtre opérationnelle de sept jours peut légitimement produire zéro article lorsqu’un organisme n’a rien publié récemment sans rendre la source défaillante.
 
 ## 3. Cycle d’une collecte
 

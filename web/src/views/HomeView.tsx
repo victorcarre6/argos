@@ -122,7 +122,7 @@ export function HomeView({
 
       <Card className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 [&>h3]:mb-0">
             <SectionTitle>Dernier rapport</SectionTitle>
             {summary.content.trim() && (
               <a
