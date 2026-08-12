@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from rag.indexing import metadata_key, rag_config, vector_store
 from rag.models import chat_model
 from rag.prompts import load_prompt
-from system.settings import SOURCE_KEYS, load_sources_config
+from system.settings import SOURCE_KEYS, load_ai_config, load_sources_config
 
 
 class QueryPlan(BaseModel):
@@ -22,7 +22,7 @@ class QueryPlan(BaseModel):
     min_score: int | None = None
 
 
-def _query_plan(prompt: str) -> QueryPlan:
+def _query_plan(prompt: str, config: dict[str, Any]) -> QueryPlan:
     catalog = load_sources_config()
     categories = [category["name"] for category in catalog.get("categories", [])]
     sources = [
@@ -38,9 +38,9 @@ def _query_plan(prompt: str) -> QueryPlan:
         keys=sorted(SOURCE_KEYS),
         question=prompt,
     )
-    planner = chat_model(
-        rag_config().get("query_model") or None
-    ).with_structured_output(QueryPlan, method="json_schema")
+    planner = chat_model(config.get("query_model") or None).with_structured_output(
+        QueryPlan, method="json_schema"
+    )
     plan = planner.invoke(instruction)
     plan.query = plan.query.strip() or prompt
     plan.categories = [item for item in plan.categories if item in categories]
@@ -82,11 +82,15 @@ def chroma_filter(plan: QueryPlan) -> dict[str, Any] | None:
     return clauses[0] if len(clauses) == 1 else {"$and": clauses}
 
 
-def retrieve(prompt: str, limit: int | None = None) -> list[dict[str, Any]]:
+def retrieve(
+    prompt: str, limit: int | None = None, *, profile: str = "report"
+) -> list[dict[str, Any]]:
     config = rag_config()
+    if profile == "assistant":
+        config = {**config, **load_ai_config()["assistant"]["rag"]}
     final_limit = limit or int(config.get("final_k", 6))
     try:
-        plan = _query_plan(prompt)
+        plan = _query_plan(prompt, config)
     except Exception:
         plan = QueryPlan(query=prompt)
     candidates = vector_store().similarity_search_with_relevance_scores(

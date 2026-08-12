@@ -4,7 +4,7 @@ Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA
 
 ## Fonctions principales
 
-- catalogue YAML de 134 sources réparties en 8 catégories, éditable dans l’interface ;
+- catalogue YAML de 126 sources actives réparties en 8 catégories, éditable dans l’interface ;
 - clés thématiques et priorités P1/P2/P3 affichées dans Flux ;
 - taxonomie globale de 18 tags en `snake_case`, filtrables et affichés sur les cartes ;
 - collecte concurrente, normalisation, déduplication et rétention dans SQLite ;
@@ -12,7 +12,7 @@ Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA
 - index RAG Chroma synchronisé après collecte ;
 - retrieval vectoriel filtré par métadonnées et génération sur Ollama/Nyx ;
 - graphe LangGraph minimal avec mémoire de session en mémoire vive ;
-- pipeline collecte, indexation, synthèse et livraison Telegram à 10 h, 14 h et 18 h avec systemd ;
+- pipeline collecte, indexation, synthèse, condensation et livraison Telegram en un message à 10 h, 14 h et 18 h avec systemd ;
 - favoris durables affichés sur Homepage et filtrables dans Flux ;
 - progression pondérée et granulaire de la pipeline complète ;
 - onglet Config pour éditer les YAML et vider séparément SQLite ou Chroma après confirmation.
@@ -20,9 +20,9 @@ Argos est une plateforme de veille RSS/Atom auto-hébergée consacrée à l’IA
 La navigation principale est une barre horizontale en pilules. Config regroupe l’éditeur structuré des sources et les réglages avancés dans deux sous-onglets.
 L’onglet Assistants regroupe le chatbot RAG et l’état non sensible du bot Telegram.
 Il décrit aussi les cycles automatiques à partir du fichier timer systemd réellement monté dans l’API, ainsi que la dernière exécution enregistrée.
-Homepage regroupe les quatre métriques de pilotage, les 30 derniers favoris dans une fenêtre de trois cartes et la synthèse Markdown disponible dans `data/summary.md`. Santé présente le dernier cycle, le stockage total, les signaux dont les P1 et l’état agrégé des sources.
+Homepage regroupe les quatre métriques de pilotage, les 30 derniers favoris dans une fenêtre de trois cartes et le dernier rapport Markdown de `data/reports/`. Santé présente le dernier cycle, le stockage total, les signaux dont les P1 et l’état agrégé des sources.
 
-Après chaque indexation réussie, un agent LangGraph repère les nouveaux P1, les regroupe en cinq parties maximum, enrichit chaque partie avec le retrieval Chroma puis remplace atomiquement `data/summary.md`. Une panne Nyx conserve le document précédent et reporte les signaux à la prochaine collecte.
+Après chaque indexation réussie, un agent LangGraph repère les nouveaux P1, effectue un retrieval Chroma global puis rédige le rapport en un seul appel Nyx avant de remplacer atomiquement `data/summary.md`. Une panne Nyx conserve le document précédent et reporte les signaux à la prochaine collecte.
 
 ## Architecture
 
@@ -59,7 +59,7 @@ Les données persistantes sont dans `data/monitoring.db` et `data/chroma/`. Elle
 
 - `config/sources.yml` : taxonomie globale des tags, catégories, flux, clés, priorités, fenêtre RSS et rétention SQLite ;
 - `config/ai.yaml` : Ollama, embeddings RAG, Chroma, chunking et retrieval ;
-- `config/prompt.yaml` : prompts du chatbot, du self-query et de la synthèse P1 ;
+- `config/prompt.yaml` : prompts du chatbot, du self-query, de la synthèse P1 et du summarizer Telegram ;
 - `config/telegram.yaml` : livraison facultative du rapport AI Summary ;
 - `systemd/argos-collect.*` : collecte à 10 h, 14 h et 18 h sur Atlas.
 

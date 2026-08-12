@@ -17,6 +17,7 @@ os.environ.setdefault(
 from feeds.database import initialize  # noqa: E402
 from feeds.collection import _is_recent, _score  # noqa: E402
 from rag.indexing import index_status, metadata_key, sync_index  # noqa: E402
+import rag.retrieve as retrieve_module  # noqa: E402
 from rag.retrieve import QueryPlan, chroma_filter  # noqa: E402
 
 
@@ -95,6 +96,41 @@ class RagMetadataTest(unittest.TestCase):
                     {"score": {"$gte": 55}},
                 ]
             },
+        )
+
+    def test_assistant_retrieval_uses_its_own_candidate_limit(self) -> None:
+        store = unittest.mock.Mock()
+        store.similarity_search_with_relevance_scores.return_value = []
+        report_config = {"candidate_k": 10, "final_k": 4, "query_model": "report"}
+        assistant_config = {
+            "candidate_k": 30,
+            "final_k": 8,
+            "query_model": "assistant",
+            "session_message_limit": 12,
+        }
+        with (
+            patch.object(retrieve_module, "rag_config", return_value=report_config),
+            patch.object(
+                retrieve_module,
+                "load_ai_config",
+                return_value={"assistant": {"rag": assistant_config}},
+            ),
+            patch.object(
+                retrieve_module,
+                "_query_plan",
+                return_value=QueryPlan(query="agents"),
+            ) as query_plan,
+            patch.object(retrieve_module, "vector_store", return_value=store),
+        ):
+            self.assertEqual(
+                [], retrieve_module.retrieve("agents", profile="assistant")
+            )
+        query_plan.assert_called_once_with(
+            "agents", {**report_config, **assistant_config}
+        )
+        self.assertEqual(
+            30,
+            store.similarity_search_with_relevance_scores.call_args.kwargs["k"],
         )
 
     def test_failed_indexing_stays_pending_until_the_next_success(self) -> None:

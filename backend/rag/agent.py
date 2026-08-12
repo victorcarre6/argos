@@ -45,14 +45,16 @@ def _build_graph():
     )
 
     def retrieve_node(state: RagState) -> dict[str, Any]:
-        sources = retrieve(state["question"])
+        sources = retrieve(state["question"], profile="assistant")
         return {"sources": sources, "context": _format_context(sources)}
 
     def generate_node(state: RagState) -> dict[str, Any]:
         system = SystemMessage(
             content=load_prompt("assistant", "system", context=state["context"])
         )
-        history_limit = int(load_ai_config()["rag"].get("session_message_limit", 12))
+        history_limit = int(
+            load_ai_config()["assistant"]["rag"].get("session_message_limit", 12)
+        )
         response = chat_model().invoke([system, *state["messages"][-history_limit:]])
         return {"messages": [response]}
 

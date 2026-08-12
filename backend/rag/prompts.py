@@ -8,8 +8,8 @@ from system.settings import PROMPT_CONFIG_PATH, load_yaml
 REQUIRED_PROMPTS = {
     ("assistant", "system"): {"context"},
     ("retrieval", "query_plan"): {"categories", "sources", "keys", "question"},
-    ("summary", "plan"): {"signals"},
     ("summary", "section"): {"title", "references"},
+    ("summarizer", "telegram"): {"max_chars", "report"},
 }
 
 

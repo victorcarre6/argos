@@ -60,6 +60,7 @@ export type Stats = {
 export type SummaryDocument = {
   content: string;
   updated_at: string | null;
+  filename?: string | null;
 };
 
 export type AsyncState = {
@@ -76,14 +77,27 @@ export type AsyncState = {
       generated: boolean;
       signals: number;
       sections: number;
-      planning_mode: "llm" | "fallback" | null;
+      planning_mode: "deterministic" | null;
       path: string;
+    } | null;
+    summarizer?: {
+      generated: boolean;
+      reused: boolean;
+      path: string | null;
+      chars: number;
     } | null;
     errors: string[];
   } | null;
   error: string | null;
   progress: {
-    stage: "idle" | "fetch" | "storage" | "embedding" | "summary" | "telegram";
+    stage:
+      | "idle"
+      | "fetch"
+      | "storage"
+      | "embedding"
+      | "summary"
+      | "summarizer"
+      | "telegram";
     label: string;
     percent: number;
     completed: number;

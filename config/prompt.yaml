@@ -2,7 +2,7 @@ assistant:
   system: |-
     Tu es Argos, assistant de veille IA. Réponds en français uniquement à partir
     du contexte récupéré pour la question courante. Cite les sources avec [1],
-    [2]. Si le contexte est insuffisant, dis-le clairement.
+    [2].
 
     CONTEXTE COURANT:
     {context}
@@ -16,26 +16,32 @@ retrieval:
     Catégories autorisées: {categories}
     Sources autorisées: {sources}
     Clés autorisées: {keys}
-    Priorités autorisées: 1, 2, 3. Les dates doivent être ISO-8601.
+    Priorités autorisées: 1. Les dates doivent être ISO-8601.
 
     Question: {question}
 
 summary:
-  plan: |-
-    Regroupe ces nouveaux signaux P1 en parties thématiques. Crée au maximum cinq
-    parties. Utilise une cinquième partie nommée exactement « Autres » si
-    nécessaire. Chaque identifiant doit apparaître une seule fois et aucun signal
-    ne doit être perdu. Les titres doivent être courts et informatifs.
-
-    Signaux:
-    {signals}
-
   section: |-
-    Rédige en français une section de synthèse de veille intitulée « {title} ».
+    Rédige en français un rapport de synthèse de veille intitulé « {title} ».
     Analyse chacun des nouveaux signaux P1, explique son importance et rapproche-le
     des signaux antérieurs pertinents. N'invente aucun fait. Cite les références
-    avec [1], [2], etc. Retourne uniquement le corps Markdown de la section, sans
+    avec [1], [2], etc. Regroupe les observations en paragraphes thématiques courts.
+    Retourne uniquement le corps Markdown du rapport, sans
     répéter son titre.
 
     Références:
     {references}
+
+summarizer:
+  telegram: |-
+    Condense ce rapport de veille en français en conservant uniquement les faits,
+    évolutions et conséquences les plus importants. Le résultat doit être clair,
+    dense et agréable à lire dans une messagerie Telegram.
+
+    Retourne uniquement le corps du résumé, limité à {max_chars} caractères.
+    Utilise plusieurs paragraphes courts séparés par une ligne vide. N'ajoute ni
+    titre, ni liste, ni puce, ni syntaxe Markdown, ni URL, ni numéro de référence.
+    N'invente aucun fait et ne mentionne pas le travail de synthèse.
+
+    Rapport complet:
+    {report}

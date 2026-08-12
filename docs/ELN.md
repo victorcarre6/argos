@@ -290,3 +290,78 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 - La rétention SQLite est configurée dans `storage.retention_days`.
 - Nyx était configuré sur `:11434` ; l’assistant utilisait déjà `qwen3.6:27b`.
 - La route publique de collecte est `/api/refresh` ; `/api/collect` reste une compatibilité API.
+## 12/08 08:44 — Historique daté des rapports
+
+- Archivage UTC de chaque synthèse dans `data/reports/report_YYMMDD_HHMM.md`, avec date reprise dans le titre Markdown.
+- Résolution commune du dernier rapport pour le seuil P1, Homepage et Telegram ; repli sur `data/summary.md` pour migrer sans perdre le seuil existant.
+- Conservation de `data/summary.md` comme copie courante pour les intégrations historiques.
+## 12/08 09:22 — Summarizer Telegram
+
+- Insertion d’un graphe `load → summarize → save` entre la synthèse P1 et Telegram.
+- Production persistante d’un texte sans Markdown ni références, titré `Rapport DD-MM HH:MM` et strictement limité à un message.
+- Refus des sorties trop longues plutôt que découpage ; reprise d’envoi depuis l’artefact existant sans nouvel appel Nyx.
+- Test de condensation basé sur le rapport réel de 53 Ko dans `data_example/report.md`.
+## 12/08 09:35 — En-tête des favoris Homepage
+
+- Retrait de l’étoile décorative de la carte Flux favoris, sans modifier les favoris ni leur filtre dans Flux.
+## 12/08 09:45 — Téléchargement du dernier rapport
+
+- Renommage de `AI Summary` en `Dernier rapport` sur Homepage.
+- Ajout d’un bouton téléchargeant le dernier Markdown avec son nom daté `report_YYMMDD_HHMM.md` via une route fixe.
+
+## 12/08 09:50 — Interface de chat multi-tour
+
+- Reprise des principes de l’interface NEXUS : chronologie en bulles, zone de saisie fixe, défilement automatique et raccourci Entrée/Maj + Entrée.
+- Remplacement de la réponse unique par tous les tours utilisateur/assistant, associés au même `session_id` LangGraph.
+- Hauteur du chat portée à 42 rem, soit environ trois fois la carte précédente, et conservation de la chronologie dans le navigateur lors des changements d’onglet.
+- Ajout d’une action Nouvelle conversation qui efface le checkpoint backend et renouvelle la session locale.
+
+## 12/08 10:00 — Retrieval dédié à l’assistant
+
+- Conservation des paramètres `rag` existants pour l’index partagé et le retrieval utilisé pendant la rédaction du rapport.
+- Ajout de `assistant.rag` avec ses propres `candidate_k`, `final_k`, `query_model` et `session_message_limit`.
+- Routage explicite du chatbot vers ce profil, sans modifier le profil du rapport.
+- Compatibilité des anciens YAML : en l’absence de la nouvelle section, l’assistant hérite des limites et du modèle de requête de `rag`.
+
+## 12/08 10:05 — Alignement du téléchargement Homepage
+
+- Neutralisation locale de la marge basse du titre `Dernier rapport` afin de centrer verticalement son bouton de téléchargement.
+
+## 12/08 10:23 — Réparation des flux AAP
+
+- Conservation du catalogue Atlas récupéré par l’utilisateur, ensuite ramené à 126 sources actives par ses modifications, sans réintroduire les entrées retirées.
+- Remplacement des sept pages HTML ou endpoints RSS obsolètes de la catégorie financements ; les huit sources sont maintenant actives.
+- Validation directe par `fetch_source` des flux officiels ANR, EIC, HaDEA, REA, Commission R&I, EuroHPC, UKRI et NSF : HTTP 200, aucune erreur et 15 à 20 entrées sur la fenêtre historique de contrôle.
+- Avec la fenêtre opérationnelle de sept jours, EIC, HaDEA, Commission R&I, UKRI et NSF fournissaient des éléments récents ; ANR, EuroHPC et REA restaient sains mais sans publication assez récente au moment du test.
+
+## 12/08 10:35 — Pipeline de rapport accélérée et Telegram borné
+
+- Suppression de la planification thématique et des générations section par section : un retrieval global et une rédaction unique remplacent jusqu’à onze appels Nyx par deux maximum.
+- Conservation de la sélection P1, du seuil basé sur le dernier rapport, du contexte Chroma, des références déterministes et de l’archivage daté.
+- En cas de dépassement Telegram, seconde condensation sur le premier résumé ; cette première approche de coupe déterministe a ensuite été remplacée par le budget natif documenté ci-dessous.
+- Le résumé reste destiné à un artefact mono-message ; un modèle qui dépasse trois budgets successifs produit une erreur explicite.
+
+## 12/08 10:45 — Budget de sortie natif du summarizer
+
+- Ajout de `summarizer.max_output_tokens=800` dans `ai.yaml` et son exemple.
+- Traduction de ce réglage générique vers `ChatOllama.num_predict`, paramètre natif de génération Ollama.
+- Suppression de la troncature applicative ; les dépassements résiduels sont réécrits par Nyx avec la moitié puis le tiers du budget initial.
+- Conservation de `telegram.max_message_chars` comme validation finale, car une limite de tokens ne garantit pas une longueur exacte en caractères.
+
+## 12/08 10:55 — Réponses vides du summarizer Qwen
+
+- Identification du budget `num_predict` consommé par le raisonnement interne comme cause probable de `response.content` vide.
+- Ajout de `summarizer.reasoning=false`, transmis au champ natif `ChatOllama.reasoning` uniquement pour cet agent.
+- Une réponse vide ne bloque plus au premier essai : le summarizer effectue jusqu’à trois tentatives avant de produire une erreur explicite.
+
+## 12/08 11:22 — Rapport Homepage et heure de Paris
+
+- Passage des nouveaux noms `report_YYMMDD_HHMM.md`, titres Markdown et titres Telegram au fuseau `Europe/Paris`, avec gestion automatique CET/CEST.
+- Compatibilité des archives UTC existantes grâce à la lecture de l’horodatage ISO intégré au rapport avant conversion locale.
+- Ajout de `Cache-Control: no-store` à `/api/summary` pour empêcher Homepage de conserver une ancienne réponse.
+- La réponse JSON expose désormais `filename`, permettant d’identifier précisément l’archive effectivement chargée.
+
+## 12/08 11:30 — Raccourci vers l’accueil Atlas
+
+- Ajout d’un bouton maison gris à droite de l’icône Argos dans l’en-tête.
+- Le lien ouvre `http://192.168.1.50:3141` dans un nouvel onglet avec un libellé accessible.

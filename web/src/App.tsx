@@ -92,6 +92,16 @@ function AppShell({
             <div className="flex size-8 items-center justify-center rounded-lg bg-success text-white">
               <Rss className="size-4" />
             </div>
+            <a
+              href="http://192.168.1.50:3141"
+              target="_blank"
+              rel="noreferrer"
+              title="Ouvrir l'accueil Atlas"
+              aria-label="Ouvrir l'accueil Atlas"
+              className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <House className="size-4" />
+            </a>
             <div>
               <h1 className="font-semibold">Argos</h1>
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">

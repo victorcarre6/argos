@@ -26,6 +26,10 @@ class TelegramDeliveryTest(unittest.TestCase):
         self.summary_path.write_text(
             "# Rapport\n\n" + "signal " * 200, encoding="utf-8"
         )
+        self.telegram_path = self.summary_path.with_suffix(".telegram.txt")
+        self.telegram_path.write_text(
+            "Rapport 12-08 10:00\n\nUne évolution importante.", encoding="utf-8"
+        )
         self.paths = (
             patch.object(telegram, "SUMMARY_PATH", self.summary_path),
             patch.object(telegram, "TELEGRAM_PATH", self.config_path),
@@ -39,19 +43,20 @@ class TelegramDeliveryTest(unittest.TestCase):
             context.stop()
         self.temporary_directory.cleanup()
 
-    def test_report_is_split_sent_once_and_marked_as_delivered(self) -> None:
+    def test_summary_is_sent_as_one_message_and_marked_as_delivered(self) -> None:
         response = Mock(ok=True, status_code=200)
         with patch("system.telegram.requests.post", return_value=response) as post:
             result = telegram.send_summary_if_pending()
             second = telegram.send_summary_if_pending()
 
         self.assertTrue(result["sent"])
-        self.assertGreater(result["messages"], 1)
+        self.assertEqual(1, result["messages"])
         self.assertEqual("already_sent", second["reason"])
-        self.assertEqual(result["messages"], post.call_count)
+        self.assertEqual(1, post.call_count)
         self.assertTrue(telegram._delivery_path().exists())
-        self.assertTrue(
-            all(len(call.kwargs["json"]["text"]) <= 500 for call in post.call_args_list)
+        self.assertEqual(
+            self.telegram_path.read_text(encoding="utf-8"),
+            post.call_args.kwargs["json"]["text"],
         )
 
     def test_failed_delivery_remains_pending_and_does_not_leak_token(self) -> None:

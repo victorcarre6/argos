@@ -1,4 +1,4 @@
-import { ExternalLink, Star } from "lucide-react";
+import { Download, ExternalLink } from "lucide-react";
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -67,14 +67,11 @@ export function HomeView({
       </section>
 
       <Card className="p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <SectionTitle>Flux favoris</SectionTitle>
-            <p className="text-sm text-muted-foreground">
-              30 derniers signaux étoilés, triés par date de récupération.
-            </p>
-          </div>
-          <Star className="size-5 fill-amber-500 text-amber-500" />
+        <div>
+          <SectionTitle>Flux favoris</SectionTitle>
+          <p className="text-sm text-muted-foreground">
+            30 derniers signaux étoilés, triés par date de récupération.
+          </p>
         </div>
         {recentFavorites.length ? (
           <div className="mt-4 max-h-[28.5rem] space-y-3 overflow-y-auto pr-2">
@@ -125,8 +122,19 @@ export function HomeView({
 
       <Card className="p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <SectionTitle>AI Summary</SectionTitle>
+          <div className="flex items-center gap-2 [&>h3]:mb-0">
+            <SectionTitle>Dernier rapport</SectionTitle>
+            {summary.content.trim() && (
+              <a
+                href="/api/summary/download"
+                download
+                title="Télécharger le dernier rapport"
+                aria-label="Télécharger le dernier rapport"
+                className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <Download className="size-4" />
+              </a>
+            )}
           </div>
           {summary.updated_at && (
             <span className="text-xs text-muted-foreground">
@@ -140,7 +148,7 @@ export function HomeView({
           </div>
         ) : (
           <div className="mt-5">
-            <Empty>Aucune synthèse disponible dans data/summary.md.</Empty>
+            <Empty>Aucun rapport disponible.</Empty>
           </div>
         )}
       </Card>
