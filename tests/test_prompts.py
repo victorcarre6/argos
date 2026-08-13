@@ -26,8 +26,10 @@ class PromptConfigurationTest(unittest.TestCase):
         config = {
             "assistant": {"system": "Sans variable"},
             "retrieval": {"query_plan": "{question}"},
-            "summary": {"section": "{title} {references}"},
-            "summarizer": {"telegram": "{max_chars} {report}"},
+            "summary": {
+                "plan": "{signals}",
+                "section": "{title} {references}",
+            },
         }
         errors = validate_prompt_config(config)
         self.assertTrue(any("assistant.system" in error for error in errors))

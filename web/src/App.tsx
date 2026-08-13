@@ -3,13 +3,16 @@ import {
   Bot,
   FileCog,
   House,
+  ChartNoAxesCombined,
   Rss,
 } from "lucide-react";
 import {
   useCallback,
   useEffect,
+  lazy,
   useRef,
   useState,
+  Suspense,
   type ReactNode,
 } from "react";
 
@@ -33,6 +36,12 @@ import { HealthView } from "./views/HealthView";
 import { HomeView } from "./views/HomeView";
 import { WatchView } from "./views/WatchView";
 
+const DataAnalysisView = lazy(() =>
+  import("./views/DataAnalysisView").then((module) => ({
+    default: module.DataAnalysisView,
+  })),
+);
+
 const EMPTY_CONFIG: Config = { tags: {}, categories: [] };
 const EMPTY_ASYNC_STATE: AsyncState = {
   running: false,
@@ -54,6 +63,7 @@ const NAVIGATION: Array<{ value: Tab; label: string; icon: ReactNode }> = [
   { value: "home", label: "Homepage", icon: <House className="size-4" /> },
   { value: "watch", label: "Flux", icon: <Rss className="size-4" /> },
   { value: "assistant", label: "Assistants", icon: <Bot className="size-4" /> },
+  { value: "analysis", label: "Data Analysis", icon: <ChartNoAxesCombined className="size-4" /> },
   { value: "health", label: "Santé", icon: <Activity className="size-4" /> },
   { value: "config", label: "Config", icon: <FileCog className="size-4" /> },
 ];
@@ -141,6 +151,7 @@ export function App() {
   const [config, setConfig] = useState<Config>(EMPTY_CONFIG);
   const [articles, setArticles] = useState<Article[]>([]);
   const [favoriteArticles, setFavoriteArticles] = useState<Article[]>([]);
+  const [feedbackArticles, setFeedbackArticles] = useState<Article[]>([]);
   const [stats, setStats] = useState<Stats>({
     total: 0,
     sources: 0,
@@ -174,6 +185,9 @@ export function App() {
       ),
       loadResource<{ articles: Article[] }>("/articles/favorites?limit=30", (value) =>
         setFavoriteArticles(value.articles),
+      ),
+      loadResource<{ articles: Article[] }>("/articles/feedback", (value) =>
+        setFeedbackArticles(value.articles),
       ),
       loadResource<Stats>("/stats", setStats),
       loadResource<AsyncState>("/refresh", setCollection),
@@ -303,6 +317,13 @@ export function App() {
           config={config}
           refresh={() => void refresh()}
         />
+      );
+      break;
+    case "analysis":
+      content = (
+        <Suspense fallback={<div className="py-12 text-center text-sm text-muted-foreground">Chargement des graphiques…</div>}>
+          <DataAnalysisView feedback={feedbackArticles} currentTotal={stats.total} />
+        </Suspense>
       );
       break;
     case "assistant":

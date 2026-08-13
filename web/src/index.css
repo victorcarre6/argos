@@ -56,3 +56,17 @@ select {
 }
 .markdown pre code { padding: 0; }
 .markdown a { color: oklch(var(--success)); text-decoration: underline; }
+
+.argos-chart-tooltip {
+  max-width: 24rem;
+  padding: 0.65rem 0.8rem;
+  color: #e5e7eb;
+  line-height: 1.45;
+}
+
+.apexcharts-tooltip,
+.apexcharts-menu {
+  border-color: #334155 !important;
+  background: #111827 !important;
+  color: #e5e7eb !important;
+}

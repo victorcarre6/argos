@@ -10,16 +10,20 @@ import yaml
 from flask import Blueprint, jsonify, request
 
 from feeds.database import connect
+from feeds.collection import _source_tags
 from rag.prompts import validate_prompt_config
 from system.settings import (
     AI_CONFIG_PATH,
     CONFIG_PATH,
     DATABASE_PATH,
     PROMPT_CONFIG_PATH,
+    SENTENCES_PATH,
     SOURCE_KEYS,
     TELEGRAM_PATH,
+    VIEWS_PATH,
     load_ai_config,
     load_sources_config,
+    load_yaml,
 )
 from system.state import collection_state
 
@@ -30,7 +34,52 @@ CONFIG_FILES = {
     "ai": AI_CONFIG_PATH,
     "telegram": TELEGRAM_PATH,
     "prompt": PROMPT_CONFIG_PATH,
+    "sentences": SENTENCES_PATH,
+    "views": VIEWS_PATH,
 }
+
+VIEW_SORTS = {"published", "collected", "score"}
+
+
+def validate_views(data: Any) -> list[str]:
+    views = data.get("views") if isinstance(data, dict) else None
+    if not isinstance(views, list):
+        return ["views doit être une liste"]
+    if len(views) > 5:
+        return ["views accepte au maximum cinq raccourcis"]
+    names = [
+        str(view.get("name", "")).strip() for view in views if isinstance(view, dict)
+    ]
+    if len(names) != len(views) or any(not name for name in names):
+        return ["chaque raccourci doit posséder un nom non vide"]
+    if len(set(names)) != len(names):
+        return ["les noms des raccourcis doivent être uniques"]
+    for index, view in enumerate(views):
+        for field in ("categories", "priorities", "sources", "tags"):
+            if not isinstance(view.get(field), list):
+                return [f"views[{index}].{field} doit être une liste"]
+        if view.get("sort") not in VIEW_SORTS:
+            return [f"views[{index}].sort est invalide"]
+        if not isinstance(view.get("search"), str):
+            return [f"views[{index}].search doit être une chaîne"]
+        if not isinstance(view.get("favorites_only"), bool) or not isinstance(
+            view.get("compact"), bool
+        ):
+            return [f"views[{index}] doit définir favorites_only et compact"]
+        if any(priority not in {1, 2, 3} for priority in view["priorities"]):
+            return [f"views[{index}].priorities est invalide"]
+    return []
+
+
+def validate_sentences(data: Any) -> list[str]:
+    sentences = data.get("sentences") if isinstance(data, dict) else None
+    if not isinstance(sentences, list) or not sentences:
+        return ["sentences doit être une liste non vide"]
+    if not all(
+        isinstance(sentence, str) and sentence.strip() for sentence in sentences
+    ):
+        return ["chaque phrase doit être une chaîne non vide"]
+    return []
 
 
 def validate(data: Any) -> list[str]:
@@ -86,6 +135,11 @@ def validate(data: Any) -> list[str]:
                 )
             if source.get("priorité") not in {1, 2, 3}:
                 errors.append(f"{path}.priorité doit valoir 1, 2 ou 3")
+            source_tags = _source_tags(source)
+            if not source_tags:
+                errors.append(f"{path} doit hériter d'au moins un tag")
+            elif any(tag not in tags for tag in source_tags):
+                errors.append(f"{path}.tags contient un tag hors taxonomie")
     return errors
 
 
@@ -113,6 +167,10 @@ def config_file(name: str) -> Any:
     path = CONFIG_FILES.get(name)
     if path is None:
         return jsonify(error="Configuration inconnue"), 404
+    if not path.exists():
+        if name == "sentences":
+            return jsonify(name=name, content="sentences: []\n")
+        return jsonify(error="Fichier de configuration introuvable"), 404
     return jsonify(name=name, content=path.read_text(encoding="utf-8"))
 
 
@@ -138,10 +196,39 @@ def save_config_file(name: str) -> Any:
         errors = validate_prompt_config(parsed)
         if errors:
             return jsonify(error="Prompts invalides", details=errors), 400
+    if name == "sentences":
+        errors = validate_sentences(parsed)
+        if errors:
+            return jsonify(error="Phrases invalides", details=errors), 400
+    if name == "views":
+        errors = validate_views(parsed)
+        if errors:
+            return jsonify(error="Raccourcis invalides", details=errors), 400
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(content.rstrip() + "\n", encoding="utf-8")
     temporary.replace(path)
     return jsonify(status="saved")
+
+
+@blueprint.get("/api/views")
+def saved_views() -> Any:
+    return jsonify(load_yaml(VIEWS_PATH).get("views", []))
+
+
+@blueprint.post("/api/views")
+def add_saved_view() -> Any:
+    payload = request.get_json(silent=True)
+    views = load_yaml(VIEWS_PATH).get("views", [])
+    data = {"views": [*views, payload] if isinstance(views, list) else [payload]}
+    errors = validate_views(data)
+    if errors:
+        return jsonify(error="Raccourci invalide", details=errors), 400
+    temporary = VIEWS_PATH.with_suffix(".yaml.tmp")
+    temporary.write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    temporary.replace(VIEWS_PATH)
+    return jsonify(payload), 201
 
 
 def _jobs_are_running() -> bool:

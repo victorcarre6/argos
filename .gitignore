@@ -13,3 +13,4 @@ config/ai.yaml
 config/telegram.yaml
 data/
 docs/
+config/sentences.yaml

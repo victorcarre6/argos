@@ -1,9 +1,9 @@
-import { Download, ExternalLink } from "lucide-react";
+import { Download } from "lucide-react";
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
-import { Reader } from "../components/articles";
-import { Card, Empty, Label, Pill, SectionTitle } from "../components/ui";
+import { ArticleCard, Reader } from "../components/articles";
+import { Card, Empty, Label, SectionTitle } from "../components/ui";
 import { formatDate } from "../lib/format";
 import type { Article, Config, Stats, SummaryDocument } from "../types";
 
@@ -67,50 +67,16 @@ export function HomeView({
       </section>
 
       <Card className="p-6">
-        <div>
-          <SectionTitle>Flux favoris</SectionTitle>
-          <p className="text-sm text-muted-foreground">
-            30 derniers signaux étoilés, triés par date de récupération.
-          </p>
-        </div>
+        <SectionTitle>Flux favoris</SectionTitle>
         {recentFavorites.length ? (
-          <div className="mt-4 max-h-[28.5rem] space-y-3 overflow-y-auto pr-2">
+          <div className="max-h-[28.5rem] space-y-2 overflow-y-auto pr-2">
             {recentFavorites.map((article) => (
-              <article
+              <ArticleCard
                 key={article.id}
-                className="flex min-h-36 flex-col justify-between rounded-lg border border-border p-4"
-              >
-                <div>
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    <Pill tone="brand">{article.category}</Pill>
-                    {article.tags.map((tag) => (
-                      <Pill key={tag} tone="neutral">
-                        {tag}
-                      </Pill>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className="text-left font-semibold hover:text-brand"
-                    onClick={() => setReader(article)}
-                  >
-                    {article.title}
-                  </button>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>
-                    {article.source} · récupéré le {formatDate(article.collected_at)}
-                  </span>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 hover:text-brand"
-                  >
-                    Source <ExternalLink className="size-3" />
-                  </a>
-                </div>
-              </article>
+                article={article}
+                compact
+                onRead={setReader}
+              />
             ))}
           </div>
         ) : (

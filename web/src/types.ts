@@ -1,6 +1,7 @@
 export type Tab =
   | "home"
   | "watch"
+  | "analysis"
   | "health"
   | "assistant"
   | "config";
@@ -10,6 +11,7 @@ export type Source = {
   name: string;
   url: string;
   keys: string[];
+  tags?: string[];
   priorité: Priority;
   enabled?: boolean;
   max_items?: number;
@@ -43,6 +45,20 @@ export type Article = {
   priorité: Priority;
   view: boolean;
   candidate: "good" | "bad" | null;
+  feedback_created_at?: string;
+  feedback_updated_at?: string;
+};
+
+export type SavedView = {
+  name: string;
+  categories: string[];
+  priorities: Priority[];
+  sources: string[];
+  tags: string[];
+  search: string;
+  sort: "published" | "collected" | "score";
+  favorites_only: boolean;
+  compact: boolean;
 };
 
 export type Stats = {
@@ -80,12 +96,6 @@ export type AsyncState = {
       planning_mode: "deterministic" | null;
       path: string;
     } | null;
-    summarizer?: {
-      generated: boolean;
-      reused: boolean;
-      path: string | null;
-      chars: number;
-    } | null;
     errors: string[];
   } | null;
   error: string | null;
@@ -96,7 +106,6 @@ export type AsyncState = {
       | "storage"
       | "embedding"
       | "summary"
-      | "summarizer"
       | "telegram";
     label: string;
     percent: number;

@@ -118,6 +118,32 @@ def favorite_articles() -> Any:
     return jsonify(articles=favorites[:limit], total=len(favorites))
 
 
+@blueprint.get("/api/articles/feedback")
+def feedback_articles() -> Any:
+    with connect() as connection:
+        rows = connection.execute(
+            """SELECT candidate,snapshot_json,created_at,updated_at
+            FROM signal_feedback ORDER BY updated_at DESC"""
+        ).fetchall()
+    articles = []
+    for row in rows:
+        try:
+            snapshot = json.loads(row["snapshot_json"])
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if isinstance(snapshot, dict):
+            articles.append(
+                {
+                    **snapshot,
+                    "view": bool(snapshot.get("view", True)),
+                    "candidate": row["candidate"],
+                    "feedback_created_at": row["created_at"],
+                    "feedback_updated_at": row["updated_at"],
+                }
+            )
+    return jsonify(articles=articles, total=len(articles))
+
+
 @blueprint.patch("/api/articles/<article_id>/view")
 def update_article_view(article_id: str) -> Any:
     value = (request.get_json(silent=True) or {}).get("view")

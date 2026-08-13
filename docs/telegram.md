@@ -1,32 +1,48 @@
-# Livraison du rapport par Telegram
+# Bot Telegram interactif
 
-Telegram est exclusivement la dernière étape de la collecte :
+Telegram est la dernière étape de la collecte :
 
 ```text
-RSS → SQLite et scoring → embeddings Chroma → synthèse → summarizer → Telegram
+RSS → SQLite/scoring → Chroma → plan thématique → rapports 1…N + 5 → sommaire Telegram
 ```
 
-Argos n’envoie pas d’alertes article par article. Après la génération du rapport complet, le graphe `summarizer` demande à Nyx un condensé sans Markdown, URL ni références. Le résultat est sauvegardé à côté du rapport sous `telegram_YYMMDD_HHMM.txt`, avec le titre `Rapport DD-MM HH:MM`, puis envoyé comme un unique message texte.
+Le planificateur crée de un à quatre axes principaux et réserve toujours le numéro `5` à `Autre`. Chaque partie possède un fichier texte daté ; leur fusion Markdown constitue le rapport principal affiché dans Argos. Le sommaire envoyé au bot reprend les titres et les descriptions courtes du plan, puis invite l’utilisateur à répondre par un chiffre.
+
+La fin du sommaire utilise une phrase de `config/sentences.yaml`, choisie aléatoirement avec `randint` lors de la génération, puis ajoute l’instruction fixe pour répondre par un numéro ou utiliser `/download`. Le fichier est optionnel : s’il est absent ou sans phrase exploitable, seule l’instruction fixe est ajoutée. La phrase intégrée à l’artefact reste inchangée lors d’une reprise d’envoi.
 
 ## Configuration
 
-1. Créer le bot avec [@BotFather](https://t.me/BotFather), puis lui envoyer un premier message depuis la conversation cible.
-2. Consulter `https://api.telegram.org/bot<TOKEN>/getUpdates` et relever `message.chat.id`.
-3. Sur Atlas, ajouter `TELEGRAM_BOT_TOKEN=<token>` dans `/home/vika/argos/.env`, avec des permissions `600`. Ne jamais placer le token dans Git, le YAML ou l’historique shell.
-4. Dans `config/telegram.yaml`, renseigner `chat_id` et passer `enabled` à `true`.
-5. Recréer l’API et déclencher une collecte :
+1. Créer le bot avec [@BotFather](https://t.me/BotFather).
+2. Chaque destinataire envoie `/start` au bot, puis relève son `message.chat.id` via `getUpdates` avant de démarrer Argos.
+3. Placer uniquement `TELEGRAM_BOT_TOKEN=<token>` dans le `.env` d’Atlas.
+4. Déclarer les conversations autorisées :
 
-```bash
-cd /home/vika/argos
-docker compose up -d --build api
-curl --fail -X POST http://127.0.0.1:1207/api/refresh
-docker compose logs --since 10m api
+```yaml
+enabled: true
+bot_token_env: "TELEGRAM_BOT_TOKEN"
+chat_ids:
+  user1: "123456789"
+  user2: "987654321"
+max_message_chars: 3900
 ```
 
-`summarizer.max_output_tokens` dans `config/ai.yaml` fixe le budget de génération et est transmis à Ollama sous le nom natif `num_predict`. `summarizer.reasoning` vaut `false` afin que Qwen réserve ce budget au contenu final ; ce réglage évite une réponse vide après un raisonnement ayant consommé tous les tokens. `max_message_chars` dans `config/telegram.yaml` fixe séparément la taille maximale du message complet (3 900 par défaut, plafonnée à 4 000). Si cette validation échoue ou si la réponse est vide, Nyx réessaie jusqu’à trois fois avec un budget réduit ; Argos ne tronque pas le texte. `bot_token_env` désigne la variable d’environnement contenant le token.
+L’ancien champ unique `chat_id` reste accepté. Après démarrage, ne plus appeler manuellement `getUpdates` : une seule boucle de long polling doit consommer les messages du bot.
 
-## Reprise après erreur
+## Commandes
 
-Après le message accepté, Argos écrit l’empreinte du condensé dans `data/summary.telegram.sha256`. Si Telegram est inaccessible ou rejette le message, cette empreinte n’est pas modifiée : l’artefact reste en attente et sera retenté au prochain cycle sans nouvel appel Nyx. Un condensé déjà livré n’est pas renvoyé.
+- `/start` et `/help` affichent le mode d’emploi.
+- `/download` envoie comme document le fichier Markdown complet du dernier rapport.
+- `1` à `4` renvoie l’axe principal correspondant s’il existe.
+- `5` renvoie `Autre`.
+- Plusieurs chiffres peuvent être demandés successivement.
+- Une demande vise toujours le dernier rapport généré, y compris après la réception d’un nouveau sommaire.
 
-La réponse de santé n’expose ni token ni identifiant de conversation. Les erreurs persistées omettent également l’URL authentifiée de l’API Telegram. La progression Flux réserve 5 % au summarizer puis les 3 derniers pour l’envoi unique.
+Seuls les `chat_ids` configurés reçoivent une réponse. Une partie longue est découpée aux limites de paragraphes en plusieurs messages, sans nouvel appel LLM.
+
+## Persistance et reprise
+
+`data/summary.telegram.sha256` marque le dernier sommaire livré à tous les destinataires. `data/summary.telegram.offset` conserve le prochain update Telegram à lire afin qu’un redémarrage ne rejoue pas les anciennes commandes. L’offset n’avance qu’après le traitement réussi du message courant.
+
+Les artefacts datés sont `telegram_YYMMDD_HHMM.txt` pour le sommaire et `telegram_YYMMDD_HHMM_part_N.txt` pour les parties. Les tests associés sont dans [`tests/test_telegram.py`](../tests/test_telegram.py), [`tests/test_summary_agent.py`](../tests/test_summary_agent.py) et [`tests/test_reports.py`](../tests/test_reports.py).
+
+Lors d’une remise à zéro manuelle, arrêter d’abord le service API avant de supprimer SQLite, Chroma, rapports ou fichiers `summary.*`; supprimer une base ouverte peut provoquer une erreur SQLite `readonly database` ou `code 1032`. Les purges ordinaires doivent passer par Config.

@@ -28,4 +28,7 @@ app = create_app()
 
 if __name__ == "__main__":
     initialize()
+    from system.telegram import start_bot_listener
+
+    start_bot_listener()
     app.run(host="0.0.0.0", port=8000, debug=False)

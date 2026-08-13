@@ -6,7 +6,7 @@ import { api, jsonRequest } from "../lib/api";
 import type { Config } from "../types";
 import { SourcesView } from "./SourcesView";
 
-type ConfigName = "sources" | "ai" | "telegram" | "prompt";
+type ConfigName = "sources" | "ai" | "telegram" | "prompt" | "sentences" | "views";
 type ConfigFile = { name: ConfigName; label: string; content: string };
 
 const CONFIGS: Array<{ name: ConfigName; label: string }> = [
@@ -14,6 +14,8 @@ const CONFIGS: Array<{ name: ConfigName; label: string }> = [
   { name: "ai", label: "IA et RAG" },
   { name: "telegram", label: "Telegram" },
   { name: "prompt", label: "Prompts" },
+  { name: "sentences", label: "Phrases Telegram" },
+  { name: "views", label: "Vues Flux" },
 ];
 
 type ConfigSection = "sources" | "advanced";

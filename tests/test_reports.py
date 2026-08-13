@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 os.environ.setdefault("APP_ROOT", str(ROOT))
 
-from rag.summary_agent import _compose_node, _save_node  # noqa: E402
+from rag.summary_agent import _closing_sentence, _compose_node, _save_node  # noqa: E402
 from system.reports import (  # noqa: E402
     latest_report_path,
     report_generated_at,
@@ -44,6 +44,11 @@ class ReportHistoryTest(unittest.TestCase):
     def test_save_archives_report_and_updates_compatibility_copy(self) -> None:
         state = {
             "document": "# Rapport daté\n",
+            "menu": "1. Sujet\nRésumé\n\n5. Autre\nAucun autre signal.",
+            "drafts": [
+                {"number": 1, "title": "Sujet", "content": "Texte"},
+                {"number": 5, "title": "Autre", "content": "Aucun autre signal."},
+            ],
             "generated_at": "2026-08-12T14:05:37+00:00",
         }
         with patch("rag.summary_agent.SUMMARY_PATH", self.summary_path):
@@ -57,7 +62,23 @@ class ReportHistoryTest(unittest.TestCase):
 
     def test_compose_adds_date_to_title(self) -> None:
         result = _compose_node(
-            {"drafts": [{"title": "Sujet", "content": "Texte"}], "signals": [{}]}
+            {
+                "drafts": [
+                    {
+                        "number": 1,
+                        "title": "Sujet",
+                        "overview": "Résumé",
+                        "content": "Texte",
+                    },
+                    {
+                        "number": 5,
+                        "title": "Autre",
+                        "overview": "Aucun autre signal.",
+                        "content": "Aucun autre signal.",
+                    },
+                ],
+                "signals": [{}],
+            }
         )
 
         self.assertRegex(
@@ -65,6 +86,45 @@ class ReportHistoryTest(unittest.TestCase):
             r"^# Synthèse IA — \d{2}/\d{2}/\d{4} \d{2}:\d{2} CEST",
         )
         self.assertIn("generated_at", result)
+        self.assertIn("5. Autre", result["menu"])
+        self.assertIn("Réponds le numéro de la partie", result["menu"])
+        self.assertTrue(result["menu"].endswith("télécharger le rapport complet."))
+
+    def test_closing_sentence_uses_random_index(self) -> None:
+        sentences = self.summary_path.parent / "sentences.yaml"
+        sentences.write_text(
+            'sentences:\n  - "Phrase A"\n  - "Phrase B"\n  - "Phrase C"\n',
+            encoding="utf-8",
+        )
+        with (
+            patch("rag.summary_agent.SENTENCES_PATH", sentences),
+            patch("rag.summary_agent.randint", return_value=1) as randint,
+        ):
+            selected = _closing_sentence()
+
+        self.assertEqual("Phrase B", selected)
+        randint.assert_called_once_with(0, 2)
+
+    def test_missing_sentence_file_omits_variable_phrase(self) -> None:
+        missing = self.summary_path.parent / "missing-sentences.yaml"
+        with patch("rag.summary_agent.SENTENCES_PATH", missing):
+            selected = _closing_sentence()
+            result = _compose_node(
+                {
+                    "drafts": [
+                        {
+                            "number": 5,
+                            "title": "Autre",
+                            "overview": "Aucun autre signal.",
+                            "content": "Aucun autre signal.",
+                        }
+                    ],
+                    "signals": [],
+                }
+            )
+
+        self.assertEqual("", selected)
+        self.assertIn("\n\nRéponds le numéro", result["menu"])
 
     def test_report_path_uses_requested_format(self) -> None:
         generated_at = datetime(2026, 8, 12, 14, 5, tzinfo=timezone.utc)

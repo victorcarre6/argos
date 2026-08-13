@@ -11,6 +11,24 @@
 
 ## Réalisé
 
+- [DONE] 13/08 — Remplacer la légende discrète de la heatmap par une échelle continue verticale.
+- [DONE] 13/08 18:54 — Consolider toute la documentation Markdown avant livraison.
+- [DONE] 13/08 — Ajouter la heatmap catégories × tags rouge/vert dans Data Analysis.
+- [DONE] 13/08 — Visualiser acceptation par tag/source/priorité et distribution des scores dans Data Analysis.
+- [DONE] 13/08 — Compacter les favoris Homepage et ajouter Data Analysis pour explorer les décisions éditoriales.
+- [DONE] 13/08 — Ajouter le bouton `Reset` restaurant la vue Flux de base.
+- [DONE] 13/08 — Ajouter cinq vues Flux persistantes maximum et le raccourci initial `Favoris`.
+- [DONE] 13/08 — Faire hériter chaque signal des tags parents de sa source et les fusionner avec l’analyse textuelle.
+- [DONE] 13/08 — Appliquer systématiquement le tag `releases` aux sources nommées `Releases`.
+- [DONE] 13/08 — Unifier les badges des cartes Flux en un seul ensemble de tags verts cliquables.
+- [DONE] 13/08 — Rendre catégories, sources et tags des cartes Flux directement sélectionnables dans les filtres.
+- [DONE] 13/08 16:47 — Sélectionner par `randint` la phrase de conclusion du sommaire Telegram.
+- [DONE] 13/08 16:47 — Conclure chaque sommaire Telegram avec une phrase déterministe configurable et l’instruction de réponse.
+- [DONE] 13/08 16:47 — Ajouter `/download` au bot pour transmettre le dernier rapport Markdown complet.
+- [DONE] 13/08 16:47 — Produire des rapports thématiques `1…N` et `5. Autre`, envoyer leur sommaire et servir les choix Telegram avec `/help`.
+- [DONE] 13/08 16:18 — Permettre la livraison du rapport Telegram à plusieurs destinataires nommés dans `telegram.chat_ids`.
+- [DONE] 12/08 — Documenter les setups local, Docker/Atlas, Ollama/RAG, Telegram et systemd dans le README, puis réaligner les références sur la configuration active.
+- [DONE] 12/08 — Ajouter le raccourci vers la Homepage Atlas et harmoniser le shell frontend avec les autres applications Pantone.
 - [DONE] 12/08 — Charger sans cache le dernier rapport sur Homepage et dater les nouvelles archives en heure de Paris.
 - [DONE] 12/08 — Désactiver le raisonnement Qwen du summarizer et reprendre automatiquement ses réponses vides.
 - [DONE] 12/08 — Borner nativement la sortie du summarizer via `max_output_tokens` traduit en `num_predict` Ollama.

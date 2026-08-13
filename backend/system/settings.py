@@ -12,6 +12,10 @@ CONFIG_PATH = Path(os.environ.get("SOURCES_CONFIG", ROOT / "config/sources.yml")
 AI_CONFIG_PATH = Path(os.environ.get("AI_CONFIG", ROOT / "config/ai.yaml"))
 TELEGRAM_PATH = Path(os.environ.get("TELEGRAM_CONFIG", ROOT / "config/telegram.yaml"))
 PROMPT_CONFIG_PATH = Path(os.environ.get("PROMPT_CONFIG", ROOT / "config/prompt.yaml"))
+SENTENCES_PATH = Path(
+    os.environ.get("SENTENCES_CONFIG", ROOT / "config/sentences.yaml")
+)
+VIEWS_PATH = Path(os.environ.get("VIEWS_CONFIG", ROOT / "config/views.yaml"))
 DATABASE_PATH = Path(os.environ.get("DATABASE_PATH", ROOT / "data/monitoring.db"))
 SUMMARY_PATH = Path(os.environ.get("SUMMARY_PATH", DATABASE_PATH.parent / "summary.md"))
 TIMER_PATH = Path(os.environ.get("TIMER_CONFIG", ROOT / "systemd/argos-collect.timer"))
@@ -109,10 +113,5 @@ def load_ai_config() -> dict[str, Any]:
         config,
         "summary",
         {"top_n": 40},
-    )
-    config["summarizer"] = _section_with_defaults(
-        config,
-        "summarizer",
-        {"max_output_tokens": 800, "reasoning": False},
     )
     return config

@@ -1,11 +1,12 @@
-import { Eye, Play, RefreshCw, Search, Star } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Eye, Play, RefreshCw, RotateCcw, Search, Star } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ArticleCard, Reader } from "../components/articles";
 import { SourceFilter, TagFilter } from "../components/filters";
 import { Button, Card, Empty, SectionTitle } from "../components/ui";
 import { matchesQuery } from "../lib/format";
-import type { Article, AsyncState, Config } from "../types";
+import { api, jsonRequest } from "../lib/api";
+import type { Article, AsyncState, Config, Priority, SavedView } from "../types";
 
 export function WatchView({
   config,
@@ -22,9 +23,9 @@ export function WatchView({
   onHide: (article: Article) => void;
   onFavorite: (article: Article) => void;
 }) {
-  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState("");
-  const [priority, setPriority] = useState("");
+  const [priorities, setPriorities] = useState<Priority[]>([]);
   const [sources, setSources] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
@@ -33,17 +34,23 @@ export function WatchView({
   );
   const [compact, setCompact] = useState(false);
   const [reader, setReader] = useState<Article | null>(null);
+  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
+  const [viewMessage, setViewMessage] = useState("");
+
+  useEffect(() => {
+    void api<SavedView[]>("/views").then(setSavedViews).catch(() => undefined);
+  }, []);
 
   const shown = useMemo(
     () =>
       articles
         .filter(
           (article) =>
-            (!category || article.category === category) &&
-            (!priority || article.priorité === Number(priority)) &&
+            (!categories.length || categories.includes(article.category)) &&
+            (!priorities.length || priorities.includes(article.priorité)) &&
             (!search || matchesQuery(article, search)) &&
             (!sources.length || sources.includes(article.source)) &&
-            (!tags.length || tags.every((tag) => article.tags.includes(tag))) &&
+            (!tags.length || tags.some((tag) => article.tags.includes(tag))) &&
             (!favoritesOnly || article.candidate === "good"),
         )
         .sort((left, right) => {
@@ -54,7 +61,7 @@ export function WatchView({
             (Date.parse(left[field] || "") || 0)
           );
         }),
-    [articles, category, favoritesOnly, priority, search, sort, sources, tags],
+    [articles, categories, favoritesOnly, priorities, search, sort, sources, tags],
   );
   const sourceOptions = useMemo(
     () =>
@@ -76,6 +83,57 @@ export function WatchView({
       ),
     [config.categories],
   );
+  const applyView = (view: SavedView) => {
+    setCategories(view.categories);
+    setPriorities(view.priorities);
+    setSources(view.sources);
+    setTags(view.tags);
+    setSearch(view.search);
+    setSort(view.sort);
+    setFavoritesOnly(view.favorites_only);
+    setCompact(view.compact);
+    setViewMessage(`Vue « ${view.name} » appliquée.`);
+  };
+  const resetView = () => {
+    setCategories([]);
+    setPriorities([]);
+    setSources([]);
+    setTags([]);
+    setSearch("");
+    setSort("published");
+    setFavoritesOnly(false);
+    setCompact(false);
+    setReader(null);
+    setViewMessage("Vue réinitialisée.");
+  };
+  const addView = async () => {
+    if (savedViews.length >= 5) {
+      setViewMessage("Cinq raccourcis maximum.");
+      return;
+    }
+    const name = window.prompt("Nom du nouveau raccourci :")?.trim();
+    if (!name) return;
+    try {
+      const saved = await api<SavedView>(
+        "/views",
+        jsonRequest("POST", {
+          name,
+          categories,
+          priorities,
+          sources,
+          tags,
+          search,
+          sort,
+          favorites_only: favoritesOnly,
+          compact,
+        }),
+      );
+      setSavedViews((current) => [...current, saved]);
+      setViewMessage(`Raccourci « ${name} » enregistré.`);
+    } catch (error) {
+      setViewMessage(error instanceof Error ? error.message : "Enregistrement impossible");
+    }
+  };
   return (
     <div className="space-y-5">
       {collection.running && (
@@ -137,6 +195,13 @@ export function WatchView({
           <div className="flex gap-2">
             <Button
               variant="secondary"
+              onClick={resetView}
+              iconStart={<RotateCcw className="size-4" />}
+            >
+              Reset
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => setCompact((value) => !value)}
               iconStart={<Eye className="size-4" />}
             >
@@ -159,26 +224,22 @@ export function WatchView({
           </div>
         </div>
         <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-          <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            className="h-9 shrink-0 rounded-md border border-border bg-background px-3 text-sm"
-          >
-            <option value="">Toutes les catégories</option>
-            {config.categories.map((item) => (
-              <option key={item.name}>{item.name}</option>
-            ))}
-          </select>
-          <select
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-            className="h-9 shrink-0 rounded-md border border-border bg-background px-3 text-sm"
-          >
-            <option value="">Toutes les priorités</option>
-            <option value="1">P1</option>
-            <option value="2">P2</option>
-            <option value="3">P3</option>
-          </select>
+          <TagFilter
+            options={config.categories.map((item) => item.name)}
+            selected={categories}
+            onAdd={(value) => setCategories((current) => current.includes(value) ? current : [...current, value])}
+            onRemove={(value) => setCategories((current) => current.filter((item) => item !== value))}
+            placeholder="Toutes les catégories"
+            ariaLabel="Filtrer par catégorie"
+          />
+          <TagFilter
+            options={["1", "2", "3"]}
+            selected={priorities.map(String)}
+            onAdd={(value) => setPriorities((current) => current.includes(Number(value) as Priority) ? current : [...current, Number(value) as Priority])}
+            onRemove={(value) => setPriorities((current) => current.filter((item) => item !== Number(value)))}
+            placeholder="Toutes les priorités"
+            ariaLabel="Filtrer par priorité"
+          />
           <div className="relative min-w-64 flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -243,6 +304,18 @@ export function WatchView({
         </div>
       </Card>
 
+      <div className="flex min-h-10 flex-wrap items-center gap-2" aria-label="Raccourcis d'affichage">
+        {savedViews.map((view) => (
+          <button key={view.name} type="button" onClick={() => applyView(view)} className="rounded-full border border-success/30 bg-success/15 px-3 py-1.5 text-sm font-medium text-success transition-colors hover:bg-success/25">
+            {view.name}
+          </button>
+        ))}
+        <button type="button" onClick={addView} disabled={savedViews.length >= 5} className="rounded-full border border-dashed border-success/50 px-3 py-1.5 text-sm font-medium text-success hover:bg-success/10 disabled:cursor-not-allowed disabled:opacity-50">
+          + New
+        </button>
+        {viewMessage && <span className="text-xs text-muted-foreground">{viewMessage}</span>}
+      </div>
+
       {shown.length ? (
         <div className="space-y-3">
           {shown.map((article) => (
@@ -253,6 +326,17 @@ export function WatchView({
               onRead={setReader}
               onHide={onHide}
               onFavorite={onFavorite}
+              onCategoryFilter={(category) => setCategories((current) => current.includes(category) ? current : [...current, category])}
+              onSourceFilter={(source) =>
+                setSources((current) =>
+                  current.includes(source) ? current : [...current, source],
+                )
+              }
+              onTagFilter={(tag) =>
+                setTags((current) =>
+                  current.includes(tag) ? current : [...current, tag],
+                )
+              }
               sourceColor={sourceColors.get(article.source)}
             />
           ))}

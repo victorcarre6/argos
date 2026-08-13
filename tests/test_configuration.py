@@ -42,8 +42,6 @@ class ConfigurationTest(unittest.TestCase):
         self.assertEqual(24, config["rag"]["candidate_k"])
         self.assertEqual(24, config["assistant"]["rag"]["candidate_k"])
         self.assertEqual(12, config["assistant"]["rag"]["session_message_limit"])
-        self.assertEqual(800, config["summarizer"]["max_output_tokens"])
-        self.assertFalse(config["summarizer"]["reasoning"])
 
     def test_assistant_rag_settings_are_independent_from_report_rag(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -72,6 +70,52 @@ class ConfigurationTest(unittest.TestCase):
                 )
             self.assertEqual(400, response.status_code)
             self.assertEqual(original, path.read_text(encoding="utf-8"))
+
+    def test_empty_sentence_stock_is_not_saved(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sentences.yaml"
+            path.write_text('sentences:\n  - "Phrase existante"\n', encoding="utf-8")
+            with patch.dict(configuration.CONFIG_FILES, {"sentences": path}):
+                response = self.client.put(
+                    "/api/config/sentences", json={"content": "sentences: []"}
+                )
+
+            self.assertEqual(400, response.status_code)
+            self.assertIn("Phrase existante", path.read_text(encoding="utf-8"))
+
+    def test_missing_optional_sentence_file_can_be_opened(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sentences.yaml"
+            with patch.dict(configuration.CONFIG_FILES, {"sentences": path}):
+                response = self.client.get("/api/config/sentences")
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("sentences: []\n", response.get_json()["content"])
+
+    def test_saved_views_are_persisted_and_limited_to_five(self) -> None:
+        view = {
+            "categories": [],
+            "priorities": [1, 2],
+            "sources": [],
+            "tags": ["llm"],
+            "search": "",
+            "sort": "published",
+            "favorites_only": False,
+            "compact": False,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "views.yaml"
+            with patch.object(configuration, "VIEWS_PATH", path):
+                for index in range(5):
+                    response = self.client.post(
+                        "/api/views", json={**view, "name": f"Vue {index}"}
+                    )
+                    self.assertEqual(201, response.status_code)
+                refused = self.client.post("/api/views", json={**view, "name": "Vue 5"})
+                stored = self.client.get("/api/views").get_json()
+
+        self.assertEqual(400, refused.status_code)
+        self.assertEqual(5, len(stored))
 
     def test_sqlite_flush_preserves_durable_feedback(self) -> None:
         with connect() as connection:

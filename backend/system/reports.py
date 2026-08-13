@@ -69,6 +69,11 @@ def telegram_summary_path(summary_path: Path, report: Path) -> Path:
     return summary_path.with_suffix(".telegram.txt")
 
 
+def telegram_part_path(summary_path: Path, report: Path, number: int) -> Path:
+    menu_path = telegram_summary_path(summary_path, report)
+    return menu_path.with_name(f"{menu_path.stem}_part_{number}.txt")
+
+
 def latest_telegram_summary_path(summary_path: Path) -> Path | None:
     report = latest_report_path(summary_path)
     if report is None:

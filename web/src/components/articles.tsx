@@ -22,6 +22,9 @@ export function ArticleCard({
   onRead,
   onHide,
   onFavorite,
+  onCategoryFilter,
+  onSourceFilter,
+  onTagFilter,
   sourceColor,
 }: {
   article: Article;
@@ -29,6 +32,9 @@ export function ArticleCard({
   onRead: (article: Article) => void;
   onHide?: (article: Article) => void;
   onFavorite?: (article: Article) => void;
+  onCategoryFilter?: (category: string) => void;
+  onSourceFilter?: (source: string) => void;
+  onTagFilter?: (tag: string) => void;
   sourceColor?: string;
 }) {
   return (
@@ -70,18 +76,28 @@ export function ArticleCard({
       <div className="flex gap-3">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap gap-2">
-            <Pill tone={article.score >= 55 ? "brand" : "neutral"}>
-              {article.category}
-            </Pill>
-            {article.keys.map((key) => (
-              <Pill key={key} tone="success">
-                {key}
+            <button
+              type="button"
+              onClick={() => onCategoryFilter?.(article.category)}
+              aria-label={`Filtrer par la catégorie ${article.category}`}
+              title="Filtrer par cette catégorie"
+              className="rounded-full transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            >
+              <Pill tone={article.score >= 55 ? "brand" : "neutral"}>
+                {article.category}
               </Pill>
-            ))}
+            </button>
             {article.tags.map((tag) => (
-              <Pill key={tag} tone="neutral">
-                {tag}
-              </Pill>
+              <button
+                key={tag}
+                type="button"
+                onClick={() => onTagFilter?.(tag)}
+                aria-label={`Ajouter le tag ${tag} aux filtres`}
+                title="Ajouter ce tag aux filtres"
+                className="rounded-full transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <Pill tone="success">{tag}</Pill>
+              </button>
             ))}
           </div>
           <button
@@ -96,8 +112,12 @@ export function ArticleCard({
             </p>
           )}
           <div className="mt-3 flex items-center gap-2 pr-9 text-xs text-secondary-foreground">
-            <span
-              className="rounded-full border px-2 py-0.5 font-medium"
+            <button
+              type="button"
+              onClick={() => onSourceFilter?.(article.source)}
+              aria-label={`Ajouter la source ${article.source} aux filtres`}
+              title="Ajouter cette source aux filtres"
+              className="rounded-full border px-2 py-0.5 font-medium transition-opacity hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               style={
                 sourceColor
                   ? {
@@ -109,7 +129,7 @@ export function ArticleCard({
               }
             >
               {article.source}
-            </span>
+            </button>
             <span>
               {article.published_at
                 ? `Publié le ${formatDate(article.published_at)}`

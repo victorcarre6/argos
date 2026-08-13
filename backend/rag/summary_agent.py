@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import json
+import re
 import threading
 from contextvars import ContextVar
 from datetime import datetime, timedelta, timezone
+from random import randint
 from typing import Any, Callable, TypedDict
+
+from pydantic import BaseModel, Field
 
 from feeds.database import connect
 from rag.models import chat_model
@@ -14,14 +19,35 @@ from system.reports import (
     latest_report_path,
     report_path,
     report_updated_at,
+    telegram_part_path,
+    telegram_summary_path,
 )
-from system.settings import SUMMARY_PATH, load_ai_config, load_sources_config
+from system.settings import (
+    SENTENCES_PATH,
+    SUMMARY_PATH,
+    load_ai_config,
+    load_sources_config,
+    load_yaml,
+)
+
+
+class PlannedSection(BaseModel):
+    title: str = Field(min_length=1)
+    overview: str = Field(min_length=1)
+    signal_ids: list[str] = Field(default_factory=list)
+
+
+class SummaryPlan(BaseModel):
+    sections: list[PlannedSection] = Field(default_factory=list)
 
 
 class SummaryState(TypedDict, total=False):
     signals: list[dict[str, Any]]
-    drafts: list[dict[str, str]]
+    sections: list[dict[str, Any]]
+    planning_mode: str
+    drafts: list[dict[str, Any]]
     document: str
+    menu: str
     generated_at: str
 
 
@@ -70,8 +96,94 @@ def _new_p1_signals() -> list[dict[str, Any]]:
 
 def _select_node(_state: SummaryState) -> SummaryState:
     signals = _new_p1_signals()
-    _progress(f"Sélection des signaux P1 : {len(signals)} trouvé(s)", 1, 6)
+    _progress(f"Sélection des signaux P1 : {len(signals)} trouvé(s)", 1, 8)
     return {"signals": signals}
+
+
+def _normalize_plan(
+    plan: SummaryPlan, signals: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    by_id = {signal["id"]: signal for signal in signals}
+    assigned: set[str] = set()
+    sections = []
+    for proposed in plan.sections[:4]:
+        ids = [
+            signal_id
+            for signal_id in proposed.signal_ids
+            if signal_id in by_id and signal_id not in assigned
+        ]
+        if not ids:
+            continue
+        assigned.update(ids)
+        number = len(sections) + 1
+        sections.append(
+            {
+                "number": number,
+                "title": proposed.title.strip(),
+                "overview": proposed.overview.strip(),
+                "signal_ids": ids,
+            }
+        )
+    remaining = [signal_id for signal_id in by_id if signal_id not in assigned]
+    other_titles = [by_id[signal_id]["title"] for signal_id in remaining[:2]]
+    overview = (
+        "Autres signaux observés : " + "; ".join(other_titles) + "."
+        if other_titles
+        else "Aucun autre signal notable dans cette collecte."
+    )
+    sections.append(
+        {"number": 5, "title": "Autre", "overview": overview, "signal_ids": remaining}
+    )
+    return sections
+
+
+def _fallback_plan(signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: dict[str, list[str]] = {}
+    for signal in signals:
+        groups.setdefault(str(signal.get("category") or "Autre"), []).append(
+            signal["id"]
+        )
+    proposed = [
+        PlannedSection(
+            title=title,
+            overview="; ".join(
+                signal["title"] for signal in signals if signal["id"] in signal_ids[:2]
+            ),
+            signal_ids=signal_ids,
+        )
+        for title, signal_ids in list(groups.items())[:4]
+    ]
+    return _normalize_plan(SummaryPlan(sections=proposed), signals)
+
+
+def _plan_node(state: SummaryState) -> SummaryState:
+    signals = state["signals"]
+    catalog = [
+        {
+            "id": signal["id"],
+            "title": signal["title"],
+            "source": signal["source"],
+            "category": signal["category"],
+            "summary": str(signal.get("summary") or "")[:600],
+        }
+        for signal in signals
+    ]
+    instruction = load_prompt(
+        "summary", "plan", signals=json.dumps(catalog, ensure_ascii=False)
+    )
+    planner = chat_model().with_structured_output(SummaryPlan, method="json_schema")
+    _progress("Planification des thèmes par Nyx", 1, 8)
+    try:
+        plan = planner.invoke(instruction)
+        if not isinstance(plan, SummaryPlan):
+            raise ValueError("plan structuré absent")
+        sections = _normalize_plan(plan, signals)
+        mode = "llm"
+    except Exception:
+        sections = _fallback_plan(signals)
+        mode = "fallback"
+    _progress(f"Plan prêt : {len(sections)} partie(s)", 2, 8)
+    return {"sections": sections, "planning_mode": mode}
 
 
 def _source_block(
@@ -110,58 +222,103 @@ def _references_markdown(
 
 def _draft_node(state: SummaryState) -> SummaryState:
     by_id = {signal["id"]: signal for signal in state["signals"]}
-    new_signals = list(by_id.values())
-    query = "; ".join(signal["title"] for signal in new_signals)
-    new_ids = set(by_id)
-    _progress("Recherche du contexte global", 3, 6)
-    related = [item for item in retrieve(query) if item["id"] not in new_ids]
-    instruction = load_prompt(
-        "summary",
-        "section",
-        title="Points clés",
-        references=_source_block(new_signals, related),
+    drafts = []
+    for index, section in enumerate(state["sections"], start=1):
+        new_signals = [by_id[signal_id] for signal_id in section["signal_ids"]]
+        if not new_signals:
+            content = "Aucun autre signal notable dans cette collecte."
+        else:
+            _progress(
+                f"Rédaction {section['number']}. {section['title']}",
+                index + 2,
+                len(state["sections"]) + 4,
+            )
+            query = f"{section['title']}: " + "; ".join(
+                signal["title"] for signal in new_signals
+            )
+            new_ids = set(section["signal_ids"])
+            related = [item for item in retrieve(query) if item["id"] not in new_ids]
+            instruction = load_prompt(
+                "summary",
+                "section",
+                title=section["title"],
+                references=_source_block(new_signals, related),
+            )
+            response = chat_model().invoke(instruction)
+            content = f"{str(response.content).strip()}\n\n{_references_markdown(new_signals, related)}"
+        drafts.append({**section, "content": content})
+    return {"drafts": drafts}
+
+
+def _plain_text(value: str) -> str:
+    text = re.sub(r"\[([^]]+)]\(([^)]+)\)", r"\1 — \2", value)
+    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.MULTILINE)
+    return text.replace("**", "").replace("`", "").strip()
+
+
+def _closing_sentence() -> str:
+    configured = load_yaml(SENTENCES_PATH).get("sentences")
+    sentences = (
+        [
+            sentence.strip()
+            for sentence in configured
+            if isinstance(sentence, str) and sentence.strip()
+        ]
+        if isinstance(configured, list)
+        else []
     )
-    _progress("Rédaction du rapport complet par Nyx", 4, 6)
-    response = chat_model().invoke(instruction)
-    content = (
-        f"{str(response.content).strip()}\n\n"
-        f"{_references_markdown(new_signals, related)}"
-    )
-    _progress("Rapport complet rédigé", 5, 6)
-    return {"drafts": [{"title": "Points clés", "content": content}]}
+    return sentences[randint(0, len(sentences) - 1)] if sentences else ""
 
 
 def _compose_node(state: SummaryState) -> SummaryState:
-    _progress(
-        "Assemblage du rapport Markdown",
-        5,
-        6,
-    )
     generated_at = datetime.now(REPORT_TIMEZONE)
     sections = "\n\n".join(
-        f"## {draft['title']}\n\n{draft['content'].strip()}"
+        f"## {draft['number']}. {draft['title']}\n\n{draft['content'].strip()}"
         for draft in state["drafts"]
     )
     document = (
         f"# Synthèse IA — {generated_at.strftime('%d/%m/%Y %H:%M %Z')}\n\n"
-        f"> Générée le {generated_at.isoformat()} à partir de "
-        f"{len(state['signals'])} nouveau(x) signal(aux) P1.\n\n{sections}\n"
+        f"> Générée le {generated_at.isoformat()} à partir de {len(state['signals'])} nouveaux signaux P1.\n\n{sections}\n"
     )
-    return {"document": document, "generated_at": generated_at.isoformat()}
+    menu_lines = []
+    for draft in state["drafts"]:
+        title = re.sub(r"\s+", " ", draft["title"]).strip()[:80]
+        overview = re.sub(r"\s+", " ", draft["overview"]).strip()[:280]
+        menu_lines.append(f"{draft['number']}. {title}\n{overview}")
+    closing_sentence = _closing_sentence()
+    prefix = f"{closing_sentence} " if closing_sentence else ""
+    menu = "\n\n".join(menu_lines) + (
+        f"\n\n{prefix}Réponds le numéro de la partie si tu "
+        "souhaites plus d'informations, et /download pour télécharger le rapport complet."
+    )
+    return {
+        "document": document,
+        "menu": menu,
+        "generated_at": generated_at.isoformat(),
+    }
 
 
 def _save_node(state: SummaryState) -> SummaryState:
     generated_at = datetime.fromisoformat(state["generated_at"])
     archive_path = report_path(SUMMARY_PATH, generated_at)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
-    archive_temporary = archive_path.with_suffix(".md.tmp")
-    archive_temporary.write_text(state["document"], encoding="utf-8")
-    archive_temporary.replace(archive_path)
-
-    summary_temporary = SUMMARY_PATH.with_suffix(".md.tmp")
-    summary_temporary.write_text(state["document"], encoding="utf-8")
-    summary_temporary.replace(SUMMARY_PATH)
-    _progress("Rapport sauvegardé", 1, 1)
+    files = [
+        (archive_path, state["document"]),
+        (telegram_summary_path(SUMMARY_PATH, archive_path), state["menu"]),
+    ]
+    files.extend(
+        (
+            telegram_part_path(SUMMARY_PATH, archive_path, draft["number"]),
+            f"{draft['number']}. {draft['title']}\n\n{_plain_text(draft['content'])}\n",
+        )
+        for draft in state["drafts"]
+    )
+    files.append((SUMMARY_PATH, state["document"]))
+    for path, content in files:
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text(content, encoding="utf-8")
+        temporary.replace(path)
+    _progress("Rapport et parties Telegram sauvegardés", 1, 1)
     return {}
 
 
@@ -170,15 +327,17 @@ def _build_graph():
 
     builder = StateGraph(SummaryState)
     builder.add_node("select", _select_node)
+    builder.add_node("plan", _plan_node)
     builder.add_node("draft_sections", _draft_node)
     builder.add_node("compose", _compose_node)
     builder.add_node("save", _save_node)
     builder.add_edge(START, "select")
     builder.add_conditional_edges(
         "select",
-        lambda state: "draft" if state.get("signals") else "done",
-        {"draft": "draft_sections", "done": END},
+        lambda state: "plan" if state.get("signals") else "done",
+        {"plan": "plan", "done": END},
     )
+    builder.add_edge("plan", "draft_sections")
     builder.add_edge("draft_sections", "compose")
     builder.add_edge("compose", "save")
     builder.add_edge("save", END)
@@ -202,11 +361,10 @@ def generate_summary(
         result = graph().invoke({})
     finally:
         _progress_callback.reset(token)
-    signals = result.get("signals", [])
     return {
         "generated": bool(result.get("document")),
-        "signals": len(signals),
+        "signals": len(result.get("signals", [])),
         "sections": len(result.get("drafts", [])),
-        "planning_mode": "deterministic" if result.get("document") else None,
+        "planning_mode": result.get("planning_mode"),
         "path": str(SUMMARY_PATH),
     }
