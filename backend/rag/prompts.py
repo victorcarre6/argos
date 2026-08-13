@@ -9,7 +9,7 @@ REQUIRED_PROMPTS = {
     ("assistant", "system"): {"context"},
     ("retrieval", "query_plan"): {"categories", "sources", "keys", "question"},
     ("summary", "section"): {"title", "references"},
-    ("summarizer", "telegram"): {"max_chars", "report"},
+    ("summary", "plan"): {"signals"},
 }
 
 

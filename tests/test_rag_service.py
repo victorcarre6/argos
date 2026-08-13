@@ -15,7 +15,7 @@ os.environ.setdefault(
 )
 
 from feeds.database import initialize  # noqa: E402
-from feeds.collection import _is_recent, _score  # noqa: E402
+from feeds.collection import _is_recent, _score, _source_tags  # noqa: E402
 from rag.indexing import index_status, metadata_key, sync_index  # noqa: E402
 import rag.retrieve as retrieve_module  # noqa: E402
 from rag.retrieve import QueryPlan, chroma_filter  # noqa: E402
@@ -77,6 +77,33 @@ class RagMetadataTest(unittest.TestCase):
         )
         self.assertEqual(["Agents"], tags)
         self.assertEqual([], false_positive)
+
+    def test_release_sources_force_the_releases_tag(self) -> None:
+        self.assertEqual(
+            ["agents", "deploiement", "releases"],
+            _source_tags(
+                {
+                    "name": "LangChain Releases",
+                    "keys": ["IA Agentique", "Orchestration"],
+                }
+            ),
+        )
+        self.assertEqual(
+            ["agents"],
+            _source_tags({"name": "LangChain Blog", "keys": ["IA Agentique"]}),
+        )
+        score, tags = _score(
+            "v1.2.0",
+            "Corrections diverses",
+            {"releases": ["release"]},
+            3,
+            datetime.now(timezone.utc).isoformat(),
+            datetime.now(timezone.utc).isoformat(),
+            14,
+            forced_tags=["releases"],
+        )
+        self.assertEqual(["releases"], tags)
+        self.assertGreaterEqual(score, 20)
 
     def test_query_plan_becomes_an_explicit_chroma_filter(self) -> None:
         plan = QueryPlan(

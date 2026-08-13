@@ -5,6 +5,8 @@ import unittest
 
 import yaml
 
+from feeds.collection import _source_tags
+
 ROOT = Path(__file__).resolve().parents[1]
 ALLOWED_KEYS = {
     "recherche",
@@ -42,12 +44,23 @@ class SourcesConfigTest(unittest.TestCase):
                 self.assertTrue(source.get("keys"))
                 self.assertLessEqual(set(source["keys"]), ALLOWED_KEYS)
 
+    def test_every_source_inherits_controlled_tags(self) -> None:
+        taxonomy = set(self.config["tags"])
+        for source in self.sources:
+            with self.subTest(source=source["name"]):
+                tags = _source_tags(source)
+                self.assertTrue(tags)
+                self.assertLessEqual(set(tags), taxonomy)
+
     def test_storage_and_collection_windows(self) -> None:
         self.assertGreater(self.config["storage"]["retention_days"], 0)
         self.assertGreater(self.config["collection"]["max_age_days"], 0)
 
     def test_tags_use_one_global_controlled_taxonomy(self) -> None:
-        self.assertEqual(18, len(self.config["tags"]))
+        self.assertEqual(19, len(self.config["tags"]))
+        self.assertEqual(
+            ["release", "releases", "changelog"], self.config["tags"]["releases"]
+        )
         self.assertTrue(all(self.config["tags"].values()))
         self.assertTrue(
             all(re.fullmatch(r"[a-z][a-z0-9_]*", tag) for tag in self.config["tags"])

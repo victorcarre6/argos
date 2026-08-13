@@ -11,7 +11,7 @@ OnCalendar=*-*-* 10,14,18:00:00
 Persistent=true
 ```
 
-Les heures suivent le fuseau local d’Atlas. Le vérifier avec `timedatectl status`. Chaque déclenchement appelle `POST /api/refresh?trigger=systemd` ; le backend exécute ensuite `fetch → SQLite/scoring → embeddings Chroma → synthèse P1 → Telegram`. Le paramètre distingue les passages automatiques dans l’onglet **Santé**.
+Les heures suivent le fuseau local d’Atlas. Le vérifier avec `timedatectl status`. Chaque déclenchement appelle `POST /api/refresh?trigger=systemd` ; le backend exécute ensuite `fetch → SQLite/scoring et tags hérités → embeddings Chroma → plan et rapports thématiques P1 → sommaire Telegram`. Le paramètre distingue les passages automatiques dans Santé.
 
 ## Installation ou mise à jour sur Atlas
 

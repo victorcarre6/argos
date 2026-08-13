@@ -24,6 +24,3 @@ rag:
   chunk_overlap: 180
 summary:
   top_n: 40
-summarizer:
-  max_output_tokens: 800
-  reasoning: false

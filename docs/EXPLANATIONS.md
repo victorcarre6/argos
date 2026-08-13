@@ -23,7 +23,7 @@ Dans Flux, `components/filters.tsx` encapsule les deux filtres multisélection. 
 
 Le YAML est la source de vérité du catalogue. Une catégorie porte un nom, une couleur et une liste de sources. Une source possède un nom, une URL, une priorité et des clés ; elle peut être désactivée ou limiter son nombre d’entrées.
 
-La section racine `tags` définit une taxonomie globale de 18 identifiants visibles en `snake_case` ASCII et leurs alias de détection. Cette taxonomie est indépendante des catégories : un même texte reçoit donc les mêmes tags quelle que soit sa source. La correspondance est insensible à la casse et respecte les limites de mots. Plusieurs alias du même concept ne produisent qu’un tag, par exemple `agent`, `agentic` et `multi-agent` donnent `agents`. Les `keys` restent une classification éditoriale fixe de la source ; les tags décrivent le contenu d’un article.
+La section racine `tags` définit une taxonomie globale de 19 identifiants `snake_case` ASCII et leurs alias. Les `keys` restent la classification éditoriale de la source, mais sont traduites en tags parents hérités par ses articles. Les tags explicites, la règle `releases` et la détection textuelle complètent ce socle. La correspondance est insensible à la casse, respecte les limites de mots et déduplique les concepts.
 
 Le vocabulaire contrôlé comporte 14 clés : `recherche`, `LLM`, `IA Agentique`, `Orchestration`, `RAG`, `Cloud`, `HPC`, `Deep Learning`, `Ops`, `Monitoring`, `Politique`, `Newsletter`, `Cybersécurité` et `Appels à projets`. La validation empêche les fautes de frappe de devenir des filtres invisibles. La priorité vaut 1, 2 ou 3 : P1 est accentuée en rouge, P2 en vert et P3 reste neutre.
 
@@ -46,9 +46,11 @@ Deux mécanismes limitent les doublons :
 1. l’URL canonique retire fragments, slash superflu et paramètres de tracking avant calcul d’un SHA-256 stable ;
 2. la similarité pondérée du titre et du résumé rapproche les mêmes dépêches publiées sous plusieurs URL.
 
-La base est mise à jour par article. Une panne isolée est enregistrée dans la santé de la source et ne provoque pas de rollback global. En fin de tâche, Argos applique strictement la pipeline `fetch → SQLite/scoring → embedding Chroma → agent de synthèse → summarizer → Telegram`. Un échec d’indexation arrête les étapes LLM et Telegram du cycle, sans perdre les articles déjà persistés.
+La base est mise à jour par article. Une panne isolée est enregistrée dans la santé de la source et ne provoque pas de rollback global. En fin de tâche, Argos applique strictement la pipeline `fetch → SQLite/scoring → embedding Chroma → plan et rapports thématiques → Telegram`. Un échec d’indexation arrête les étapes LLM et Telegram du cycle, sans perdre les articles déjà persistés.
 
-La progression publique couvre toute cette pipeline avec des plages pondérées : fetch 0–45 %, persistance et scoring 45–55 %, embedding 55–75 %, synthèse 75–92 %, summarizer 92–97 %, Telegram 97–100 %. Le fetch avance source par source, l’indexation article par article, la synthèse à la sélection, au plan, pour chaque partie, à l’assemblage et à la sauvegarde, puis le summarizer charge, condense et sauvegarde avant l’envoi unique. Le frontend interroge uniquement `/api/refresh` chaque seconde pendant une exécution afin de rendre cette granularité sans recharger toutes les autres données.
+Le tagging fusionne deux niveaux. Les `keys` stables de chaque source sont traduites en tags parents contrôlés et héritées par tous ses articles ; un éventuel champ `tags` explicite complète cette base. `_score` ajoute ensuite les tags dont les alias apparaissent dans le titre ou le résumé. Chaque signal reçoit ainsi au moins le contexte de sa source, tout en conservant les précisions propres à son contenu. Le rescoring global réapplique cette fusion aux articles existants après chaque collecte.
+
+La progression publique couvre toute cette pipeline avec des plages pondérées : fetch 0–45 %, persistance et scoring 45–55 %, embedding 55–75 %, synthèse thématique 75–97 %, Telegram 97–100 %. Le fetch avance source par source, l’indexation article par article, puis la synthèse à la sélection, au plan, pour chaque partie, à l’assemblage et à la sauvegarde. Le frontend interroge uniquement `/api/refresh` chaque seconde pendant une exécution afin de rendre cette granularité sans recharger toutes les autres données.
 
 La table singleton `rag_index_state` conserve `pending`, la dernière tentative, le dernier succès et la dernière erreur. `pending` passe à vrai avant l’appel d’embedding et reste vrai si Nyx échoue. Comme les chunks Chroma portent les fingerprints du contenu et des métadonnées, la tentative suivante saute ce qui est déjà correct et reprend le travail restant. L’échec est visible dans le bilan et l’onglet Santé, mais les articles RSS restent disponibles.
 
@@ -60,7 +62,9 @@ SQLite (`data/monitoring.db`) conserve les articles, l’état des sources et le
 
 `signal_feedback` constitue un jeu d’apprentissage éditorial séparé. L’étoile enregistre `candidate=good`; la croix enregistre `candidate=bad` avant de masquer l’article. Chaque ligne conserve un snapshot JSON des métadonnées et du contenu au moment du choix. Cette table n’est visée ni par la rétention temporelle ni par la purge des données courantes, afin de préserver les exemples pour une future calibration du scoring.
 
-`GET /api/articles/favorites` relit ces snapshots durables, les trie par `collected_at` décroissant et limite la réponse à 30 éléments. Homepage en montre trois à la fois dans une carte défilante, y compris si l’article courant a ensuite été purgé. Dans Flux, le toggle étoile de la seconde ligne ajoute `candidate=good` aux autres critères actifs. Utiliser la croix requalifie volontairement un favori en mauvais candidat et le retire donc de cette liste.
+Data Analysis exploite directement ces snapshots. Elle rapporte favoris, masqués et ratio entre décisions durables et signaux actuels. Les taux d’acceptation `good / (good + bad)` sont calculés par tag, source et priorité ; un histogramme compare les scores par tranches de dix points. La heatmap ApexCharts catégories × tags utilise une échelle sombre du rouge au vert. Sa légende native par intervalles est masquée au profit d’une barre de dégradé continue verticale, bornée uniquement par 0 et 100 %, tandis que les cellules sans décision restent grises. La vue est chargée dynamiquement pour isoler le moteur graphique du bundle principal. Le corpus survivant à la rétention, la part évaluée peut dépasser 100 %.
+
+`GET /api/articles/favorites` relit ces snapshots durables, les trie par `collected_at` décroissant et limite la réponse à 30 éléments. Homepage les affiche sous forme de cartes compactes dans une zone défilante, y compris si l’article courant a ensuite été purgé. Dans Flux, le toggle étoile de la seconde ligne ajoute `candidate=good` aux autres critères actifs. Utiliser la croix requalifie volontairement un favori en mauvais candidat et le retire donc de cette liste.
 
 La rétention SQLite est indépendante de la fenêtre d’ingestion : la première empêche l’ajout d’archives RSS trop anciennes, tandis que `storage.retention_days` supprime automatiquement les données stockées devenues anciennes après chaque collecte.
 
@@ -72,7 +76,7 @@ Une reconstruction Docker ne supprime pas les données. Une synchronisation `rsy
 
 `rag/indexing.py` lit jusqu’à 2 000 articles non dupliqués. Pour chaque article, il calcule deux signatures : une pour le contenu et une pour les métadonnées. Si elles correspondent à l’entrée Chroma et à la version d’index, aucun embedding n’est recalculé.
 
-Le texte associe titre et résumé. En dessous de 900 caractères, il reste entier. Sinon, `RecursiveCharacterTextSplitter` produit des blocs de 1 200 caractères avec 180 caractères de recouvrement. Les séparateurs privilégient paragraphes, lignes, fins de phrase puis espaces. Ce choix est adapté aux résumés RSS : déterministe, peu coûteux et indépendant d’un second appel sémantique.
+Le texte associe titre et résumé. En dessous de 400 caractères, il reste entier. Sinon, `RecursiveCharacterTextSplitter` produit des blocs de 800 caractères avec 180 caractères de recouvrement. Les séparateurs privilégient paragraphes, lignes, fins de phrase puis espaces. Ce choix est adapté aux résumés RSS : déterministe, peu coûteux et indépendant d’un second appel sémantique.
 
 Chaque chunk contient des métadonnées filtrables : article, source, catégorie, horodatage, score, priorité et booléens pour chacune des 14 clés. `OllamaEmbeddings` utilise `nomic-embed-text-v2-moe:latest` sur Nyx et Chroma stocke les vecteurs dans une collection HNSW cosine.
 
@@ -103,25 +107,25 @@ Le frontend crée un UUID stable dans `localStorage` et l’envoie comme `sessio
 Après `sync_index()`, `rag/summary_agent.py` exécute un second `StateGraph` :
 
 ```text
-START → select → draft_sections → compose → save → END
+START → select → plan → draft_sections → compose → save → END
                  └──── aucun nouveau P1 ──────────────→ END
 ```
 
 `select` croise les sources P1 actives du YAML avec les articles visibles, uniques et apparus après la date de modification du dernier rapport archivé. Les archives valides suivent `data/reports/report_YYMMDD_HHMM.md` en heure `Europe/Paris` et sont ordonnées par leur nom ISO compact. Avant la première archive, `data/summary.md` fournit le seuil historique ; en l’absence de tout document, la fenêtre initiale reprend `collection.max_age_days`. Le seuil emploie le `mtime` précis du fichier sélectionné plutôt que la minute tronquée dans son nom. Une erreur avant `save` laisse ainsi la borne intacte et les mêmes P1 sont repris au prochain passage.
 
-`select` classe les candidats par `published_at` décroissant, avec `collected_at` comme date de repli, puis conserve les `summary.top_n` premiers. `draft_sections` construit une requête globale à partir de tous leurs titres, exécute une seule fois le retrieval self-query du rapport, puis transmet à Nyx les nouveaux signaux et le contexte antérieur retrouvé. Le modèle rédige le rapport complet en un appel au lieu d’un appel de planification suivi de deux appels par partie. Le maximum passe ainsi de onze appels Nyx à deux : planification du retrieval incluse, puis rédaction.
+`select` classe les candidats par `published_at` décroissant, avec `collected_at` comme date de repli, puis conserve les `summary.top_n` premiers. `plan` demande une sortie structurée comportant jusqu’à quatre axes, leur titre, leur aperçu Telegram et leurs identifiants. La normalisation supprime les doublons, renumérote les axes sans trou et place tous les signaux restants dans `5. Autre`; un regroupement par catégorie prend le relais si Nyx ne fournit pas de JSON valide. `draft_sections` effectue ensuite un retrieval et une rédaction propres à chaque partie non vide.
 
 Le prompt distingue les références `NOUVEAU` des références `CONTEXTE`, exige une discussion de chaque P1 et des citations numérotées. Une liste Markdown déterministe associe ensuite chaque numéro à son titre, son URL, sa source et son rôle. `compose` date le titre en heure de Paris. `save` remplace atomiquement l’archive datée, puis `data/summary.md`, conservé comme copie de compatibilité. Pour interpréter correctement les anciennes archives nommées en UTC, le résolveur lit en priorité l’horodatage ISO inclus dans leur contenu et le convertit en heure de Paris. Lors de l’initialisation SQLite, les anciens articles sans `first_seen_at` sont backfillés depuis `collected_at` afin qu’un simple refetch ne les fasse pas passer pour de nouveaux signaux.
 
-Une fois le rapport complet sauvegardé, `rag/summarizer.py` exécute le graphe `load → summarize → save`. La clé générique `summarizer.max_output_tokens` de `ai.yaml` est traduite en `num_predict`, le paramètre natif de `ChatOllama`, afin de borner la génération dès l’inférence. Le summarizer passe également `reasoning=false` : avec Qwen, le raisonnement peut sinon épuiser `num_predict` et laisser `response.content` vide. Ce réglage ne concerne ni le chatbot ni le rapport complet. Le texte est ensuite nettoyé des marqueurs Markdown, URL et références résiduels et reçoit le titre déterministe `Rapport DD-MM HH:MM`. `telegram.max_message_chars` reste une contrainte distincte puisque tokens et caractères ne sont pas équivalents. Si elle est dépassée, le résumé devient l’entrée d’une nouvelle génération avec la moitié puis le tiers du budget initial. Une réponse vide est elle aussi réessayée jusqu’à trois fois. Après trois échecs, une erreur explicite est produite ; aucune troncature applicative ne dégrade la fin du texte. `telegram_YYMMDD_HHMM.txt` est remplacé atomiquement et réutilisé s’il correspond déjà au dernier rapport.
+`compose` fusionne les parties dans le rapport Markdown principal et fabrique sans nouvel appel LLM un sommaire borné à partir des aperçus du plan. `save` écrit atomiquement le rapport, `telegram_YYMMDD_HHMM.txt` et les fichiers `telegram_YYMMDD_HHMM_part_N.txt`. Le numéro 5 existe toujours, avec un constat explicite si aucun signal secondaire n’est présent.
 
-`system/telegram.py` ne lit que cet artefact condensé et l’envoie en un appel, sans `parse_mode`. L’empreinte `data/summary.telegram.sha256` n’est remplacée atomiquement qu’après cet envoi réussi. Si l’envoi échoue, le résumé reste en attente et le prochain cycle le retente sans nouvel appel LLM. Une empreinte déjà livrée empêche le renvoi.
+`system/telegram.py` envoie le sommaire à chaque entrée nommée de `telegram.chat_ids`, puis une boucle de long polling traite `/start`, `/help`, `/download` et les chiffres. Seules les conversations configurées sont autorisées. Le fichier d’offset avance après une réponse réussie ; une erreur réseau provoque donc une nouvelle tentative. Les rapports longs sont découpés par paragraphes et une nouvelle collecte remplace automatiquement la cible par ses artefacts les plus récents.
 
 ## 9. Configuration des prompts
 
-`config/prompt.yaml` centralise les instructions auparavant dispersées dans les modules Python : système du chatbot, planification du self-query, rédaction du rapport et condensation Telegram. `rag/prompts.py` recharge le YAML à chaque appel, sélectionne le gabarit et applique `str.format` avec les seules données préparées par le code.
+`config/prompt.yaml` centralise les instructions auparavant dispersées dans les modules Python : système du chatbot, planification du self-query, plan thématique et rédaction des parties. `rag/prompts.py` recharge le YAML à chaque appel, sélectionne le gabarit et applique `str.format` avec les seules données préparées par le code.
 
-Le validateur impose les entrées et variables exactes : `{context}`, `{categories, sources, keys, question}`, `{title, references}` et `{max_chars, report}`. Une édition invalide via Config reçoit HTTP 400 et ne remplace pas le fichier courant. Le YAML reste un réglage opérationnel : le retrieval et la sauvegarde atomique restent dans le code.
+Le validateur impose les variables exactes : `{context}`, `{categories, sources, keys, question}`, `{signals}` et `{title, references}`. Une édition invalide via Config reçoit HTTP 400 et ne remplace pas le fichier courant. Le YAML reste un réglage opérationnel : retrieval et sauvegarde atomique restent dans le code.
 
 ## 10. API utile
 
@@ -134,10 +138,12 @@ Le validateur impose les entrées et variables exactes : `{context}`, `{categori
 | `GET/POST /api/refresh` | État ou démarrage de la collecte |
 | `GET /api/articles` | Articles filtrés et enrichis depuis le catalogue |
 | `GET /api/articles/favorites` | Jusqu’à 30 snapshots favoris durables, triés par récupération |
+| `GET /api/articles/feedback` | Tous les snapshots favoris/masqués pour Data Analysis |
+| `GET/POST /api/views` | Lecture ou ajout atomique d’un raccourci Flux, cinq maximum |
 | `GET/PUT /api/sources` | Lecture ou remplacement structuré des sources |
 | `POST /api/assistant` | Question RAG avec `session_id` |
 | `DELETE /api/assistant/session/<session_id>` | Effacement de la session |
-| `GET/PUT /api/config/<name>` | Lecture ou écriture atomique de `sources`, `ai` ou `telegram` |
+| `GET/PUT /api/config/<name>` | Lecture ou écriture atomique des YAML autorisés |
 | `GET /api/rag/index/status` | État persistant de la synchronisation Chroma |
 | `GET /api/collection/runs` | Historique des collectes automatiques et manuelles |
 | `DELETE /api/storage/sqlite` | Vidage des données courantes et `VACUUM`, hors feedback durable |

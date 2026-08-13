@@ -21,6 +21,16 @@ retrieval:
     Question: {question}
 
 summary:
+  plan: |-
+    Regroupe ces nouveaux signaux P1 en un à quatre axes principaux. Chaque axe
+    possède un titre court, une phrase très concise pour le sommaire Telegram et
+    les identifiants des signaux associés. N'invente aucun fait. Un identifiant
+    ne doit apparaître qu'une fois. Laisse de côté les signaux secondaires : ils
+    seront placés automatiquement dans la partie 5 « Autre ».
+
+    Signaux:
+    {signals}
+
   section: |-
     Rédige en français un rapport de synthèse de veille intitulé « {title} ».
     Analyse chacun des nouveaux signaux P1, explique son importance et rapproche-le
@@ -31,17 +41,3 @@ summary:
 
     Références:
     {references}
-
-summarizer:
-  telegram: |-
-    Condense ce rapport de veille en français en conservant uniquement les faits,
-    évolutions et conséquences les plus importants. Le résultat doit être clair,
-    dense et agréable à lire dans une messagerie Telegram.
-
-    Retourne uniquement le corps du résumé, limité à {max_chars} caractères.
-    Utilise plusieurs paragraphes courts séparés par une ligne vide. N'ajoute ni
-    titre, ni liste, ni puce, ni syntaxe Markdown, ni URL, ni numéro de référence.
-    N'invente aucun fait et ne mentionne pas le travail de synthèse.
-
-    Rapport complet:
-    {report}

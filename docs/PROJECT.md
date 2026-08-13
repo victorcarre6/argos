@@ -11,9 +11,10 @@ Le service vise un usage sur le LAN. Il doit rester léger sur Atlas, conserver 
 - administrer un catalogue structuré de sources ;
 - collecter, parser, normaliser et dédupliquer les articles ;
 - rechercher, filtrer et lire le flux ;
+- sauvegarder jusqu’à cinq vues de filtrage et analyser les décisions favoris/masqués ;
 - surveiller les erreurs, codes HTTP et latences par source ;
 - interroger le corpus avec des filtres et des citations ;
-- planifier la collecte et envoyer des alertes optionnelles.
+- planifier la collecte et servir un rapport Telegram thématique interactif.
 
 ## Architecture de référence
 
@@ -52,11 +53,11 @@ Chaque source définit :
 - `name` et `url` ;
 - `keys`, choisies dans 14 valeurs contrôlées : recherche, LLM, IA Agentique, Orchestration, RAG, Cloud, HPC, Deep Learning, Ops, Monitoring, Politique, Newsletter, Cybersécurité et Appels à projets ;
 - `priorité`, entier de 1 à 3 ;
-- facultativement `enabled: false` et `max_items`.
+- facultativement `tags`, `enabled: false` et `max_items`.
 
-Le sous-onglet Sources de Config permet de replier les catégories et de modifier ces champs. Dans Flux, P1 reçoit un contour rouge léger, P2 un contour vert léger et P3 reste neutre. Les clés apparaissent sous chaque source dans l’éditeur et sous forme de pilules vertes sur les cartes ; les tags `snake_case` détectés sont affichés séparément. La recherche combine catégorie, priorité, texte, sources, tags et favoris. Plusieurs sources forment une alternative ; plusieurs tags doivent tous être présents, sans exclure les articles possédant des tags supplémentaires.
+Le sous-onglet Sources de Config permet de replier les catégories et de modifier ces champs. Dans Flux, P1 reçoit un contour rouge léger, P2 un contour vert léger et P3 reste neutre. Les cartes n’affichent qu’un ensemble de tags verts cliquables : tags parents hérités des `keys`, compléments explicites de la source, puis détection textuelle. Catégories, priorités, sources et tags sont des multisélections en union au sein de leur groupe. Cinq raccourcis persistants maximum dans `views.yaml` mémorisent filtres, recherche, tri, favoris et densité ; Reset restaure la vue initiale.
 
-La navigation principale est horizontale, dans l’ordre Homepage, Flux, Assistants, Santé et Config. Homepage regroupe les quatre métriques de pilotage, une carte défilante des 30 derniers favoris durables triés par récupération et le rendu Markdown du dernier rapport daté de `data/reports/`. Assistants regroupe une interface de chat RAG multi-tour haute de 42 rem, une synthèse du bot Telegram sans exposer ses secrets et une description concise des cycles automatiques. Config contient deux sous-onglets horizontaux : Sources pour l’éditeur structuré, puis YAML pour les quatre fichiers bruts et les purges de stockage. Les YAML sont validés avant remplacement atomique. Chaque suppression demande de saisir le nom du magasin et l’API la refuse pendant une collecte.
+La navigation principale suit Homepage, Flux, Assistants, Data Analysis, Santé et Config. Homepage regroupe les quatre métriques, les favoris en cartes compactes et le dernier rapport. Data Analysis parcourt favoris et masqués, calcule acceptation par tag/source/priorité, histogramme des scores et heatmap ApexCharts catégories × tags avec légende verticale sombre. Assistants regroupe chat multi-tour, Telegram et cycles. Config contient Sources puis YAML pour les configurations opérationnelles et les purges protégées.
 
 ## Collecte, parsing et stockage
 
@@ -64,7 +65,7 @@ La navigation principale est horizontale, dans l’ordre Homepage, Flux, Assista
 
 `collection.max_age_days` dans `config/sources.yml` limite l’âge des entrées ingérées. Le filtre est appliqué avant `max_items`, afin que la limite porte sur les articles récents réellement retenus. Une entrée sans date reste acceptée : son ancienneté ne peut pas être déterminée de manière fiable.
 
-`feedparser` traite RSS et Atom. Pour chaque entrée, Argos exige titre et URL, nettoie le HTML du résumé, normalise les espaces, limite les longueurs, convertit la meilleure date disponible en UTC, associe catégorie et source, puis détecte les tags depuis une taxonomie globale de 18 concepts en `snake_case` ASCII. Chaque tag possède plusieurs alias non affichés ; par exemple `agentic` et `multi-agent` deviennent tous deux `agents`. La détection respecte les limites de mots et calcule ensuite un score heuristique sur 100 :
+`feedparser` traite RSS et Atom. Pour chaque entrée, Argos exige titre et URL, nettoie le résumé et convertit la meilleure date en UTC. Il fusionne tags parents issus des `keys`, tags explicites, règle `Releases`, puis correspondances textuelles dans une taxonomie globale de 19 concepts. Chaque signal possède ainsi au moins un tag. Le score heuristique sur 100 utilise ensuite :
 
 - pertinence : `min(60, 10 + 10 × tags normalisés trouvés)` ;
 - priorité : 25 points pour P1, 12 pour P2, 0 pour P3 ;
@@ -74,35 +75,35 @@ La date d’importation remplace la date de publication lorsqu’elle manque. To
 
 L’URL normalisée perd fragments et paramètres de tracking. Son SHA-256 devient l’identifiant stable. Une comparaison titre/résumé avec les 500 articles uniques récents détecte aussi les syndications proches ; les doublons restent traçables mais sont masqués par défaut.
 
-Après la collecte, Argos met à jour la santé des sources, applique `storage.retention_days`, synchronise Chroma, génère la synthèse P1, la condense pour Telegram puis livre ce résumé. Telegram n’est utilisé dans aucun autre flux. SQLite se trouve dans `data/monitoring.db` sur l’hôte.
+Après la collecte, Argos met à jour la santé des sources, applique `storage.retention_days`, synchronise Chroma, génère les parties thématiques P1 et livre leur sommaire interactif sur Telegram. SQLite se trouve dans `data/monitoring.db` sur l’hôte.
 
-Flux expose la progression pondérée de toute la pipeline : fetch 0–45 %, stockage et scoring 45–55 %, embedding 55–75 %, synthèse 75–92 %, summarizer 92–97 % et Telegram 97–100 %. Le détail avance respectivement par source, opération de stockage, article indexé, partie rédigée, condensation puis message envoyé.
+Flux expose la progression pondérée de toute la pipeline : fetch 0–45 %, stockage et scoring 45–55 %, embedding 55–75 %, synthèse thématique 75–97 % et Telegram 97–100 %. Le détail avance respectivement par source, opération de stockage, article indexé, plan, partie rédigée, sauvegarde puis sommaire envoyé.
 
 La synchronisation Chroma possède un état persistant dans SQLite. Avant chaque tentative, l’index est marqué en attente. Une panne de Nyx est enregistrée sans invalider la collecte RSS ; le prochain déclenchement manuel ou systemd reprend l’indexation incrémentale et ne marque l’index à jour qu’après un passage complet.
 
-Après une indexation réussie, l’agent de synthèse sélectionne au plus `summary.top_n` articles P1 apparus depuis la date de modification du dernier rapport, classés de la publication la plus récente à la plus ancienne. La date de collecte sert de repli lorsqu’une date de publication manque. Il effectue un retrieval Chroma global sur l’ensemble des titres, puis Nyx rédige tout le rapport en un seul appel ; les références sont ajoutées déterministement. Le document complet est daté en `Europe/Paris` puis archivé atomiquement sous `data/reports/report_YYMMDD_HHMM.md`; `data/summary.md` reste une copie de compatibilité. Homepage résout toujours le dernier nom daté, avec repli sur l’ancien `summary.md` avant la première archive, et la route de lecture interdit le cache HTTP. Si Nyx ou la génération échoue, l’ancien fichier reste intact et les P1 sont repris lors de la prochaine collecte.
+Après une indexation réussie, l’agent sélectionne au plus `summary.top_n` nouveaux P1, planifie les thèmes, puis effectue un retrieval et une rédaction par partie non vide. Les références sont ajoutées déterministement. Le document fusionné est daté en `Europe/Paris`, archivé atomiquement et copié vers `data/summary.md`. Homepage résout le dernier rapport sans cache HTTP. Une erreur conserve le document précédent et la fenêtre de reprise.
 
-Le graphe sans mémoire `summarizer` charge ensuite le dernier rapport complet, demande à Nyx un condensé factuel et sauvegarde `data/reports/telegram_YYMMDD_HHMM.txt`. Le texte commence par `Rapport DD-MM HH:MM`, utilise des paragraphes séparés par une ligne vide et exclut Markdown, URL et références. `summarizer.max_output_tokens` est transmis à ChatOllama sous la forme native `num_predict` et `summarizer.reasoning=false` empêche Qwen de consommer ce budget avant de produire le contenu final. `telegram.max_message_chars` reste la validation finale du message. En cas de dépassement ou de réponse vide, le modèle reçoit jusqu’à deux nouvelles demandes avec un budget réduit, sans troncature applicative. Telegram envoie l’artefact en un seul message. Un artefact existant est réutilisé lors d’une reprise afin de ne pas rappeler le modèle.
+Le planificateur structure les signaux en un à quatre axes principaux numérotés sans trou et réserve `5. Autre` aux signaux restants. Chaque axe est rédigé séparément et sauvegardé en TXT ; les parties sont fusionnées sans nouvel appel dans le rapport Markdown affiché par Argos. Le même plan fournit un sommaire Telegram concis. Une réponse `1` à `5` renvoie la partie disponible du dernier rapport, `/download` envoie le Markdown complet et `/help` explique les commandes. Un long polling avec offset persistant reçoit les demandes des seuls `chat_ids` autorisés.
 
 ## RAG, embedding et retrieval
 
 `backend/rag/indexing.py` synchronise au plus 2 000 articles uniques dans la collection Chroma `argos_articles`. Le fingerprint du contenu, le hash des métadonnées et une version d’index permettent de ne réindexer que ce qui change et de supprimer les chunks devenus obsolètes.
 
-Les textes d’au moins 900 caractères sont découpés par le `RecursiveCharacterTextSplitter` des intégrations LangChain : blocs de 1 200 caractères, chevauchement de 180, priorité aux paragraphes, lignes et phrases. Les chunks portent l’identifiant, le titre, l’URL, la source, la catégorie, les dates, le score, la priorité et les 14 indicateurs de clés. `OllamaEmbeddings` envoie leur texte à Nyx ; Chroma utilise un index HNSW cosine persistant.
+Les textes d’au moins 400 caractères sont découpés par le `RecursiveCharacterTextSplitter` des intégrations LangChain : blocs de 800 caractères, chevauchement de 180, priorité aux paragraphes, lignes et phrases. Les chunks portent l’identifiant, le titre, l’URL, la source, la catégorie, les dates, le score, la priorité et les 14 indicateurs de clés. `OllamaEmbeddings` envoie leur texte à Nyx ; Chroma utilise un index HNSW cosine persistant.
 
 Pour chaque question :
 
 1. ChatOllama produit un plan structuré séparant requête sémantique et filtres explicites ;
 2. les valeurs de catégories, sources, clés, priorités, dates et score sont validées contre le catalogue ;
-3. Chroma retourne jusqu’à 24 chunks dans l’ordre de similarité ;
-4. Argos déduplique les articles et garde jusqu’à 6 sources ;
+3. Chroma retourne le nombre de candidats configuré pour le profil appelant ;
+4. Argos déduplique les articles et conserve jusqu’à `final_k` sources : 4 pour le rapport et 10 pour l’assistant dans la configuration actuelle ;
 5. le modèle `qwen3.6:27b` répond uniquement à partir du contexte et cite `[1]`, `[2]`, etc.
 
 L’assistant conversationnel utilise `START → retrieve → generate → END`. Un UUID stable du navigateur sert de `thread_id`; `InMemorySaver` conserve les messages récents utilisés par la génération. Le retrieval du rapport lit `rag.candidate_k`, `rag.final_k` et `rag.query_model`, tandis que le chatbot lit les valeurs indépendantes sous `assistant.rag`, ainsi que `assistant.rag.session_message_limit`. L’index Chroma et son découpage restent communs sous `rag`. Le frontend affiche les tours successifs et conserve leur représentation dans `localStorage` pour survivre aux changements d’onglet. L’action Nouvelle conversation efface le checkpoint courant, la chronologie locale et crée un nouvel UUID. La mémoire de raisonnement du backend disparaît à chaque redémarrage du processus.
 
-L’agent de synthèse utilise un second graphe sans mémoire : `select → draft_sections → compose → save`. `draft_sections` effectue un retrieval global puis une génération unique du rapport. `compose` assemble le Markdown sans nouvel appel de modèle et `save` utilise un fichier temporaire suivi d’un remplacement atomique.
+L’agent de synthèse utilise un second graphe sans mémoire : `select → plan → draft_sections → compose → save`. `draft_sections` effectue un retrieval et une génération par partie non vide. `compose` assemble Markdown et sommaire sans nouvel appel ; `save` remplace atomiquement rapport et artefacts thématiques.
 
-La logique RAG reste répartie explicitement entre `indexing.py`, `retrieve.py`, `agent.py`, `summary_agent.py` et `summarizer.py` ; les routes importent directement le domaine concerné. `rag/prompts.py` charge et interpole les quatre gabarits LLM depuis `config/prompt.yaml`, sans prompt métier inline dans le code.
+La logique RAG reste répartie explicitement entre `indexing.py`, `retrieve.py`, `agent.py` et `summary_agent.py` ; les routes importent directement le domaine concerné. `rag/prompts.py` charge et interpole les quatre gabarits LLM depuis `config/prompt.yaml`, sans prompt métier inline dans le code.
 
 ## Déploiement et ports
 
@@ -126,8 +127,9 @@ La synchronisation de développement vers Atlas doit exclure `.git`, `web/node_m
 - Une URL connue est mise à jour sans duplication et les syndications sont identifiées.
 - Les données SQLite et Chroma survivent à une reconstruction des conteneurs.
 - Le RAG applique les filtres autorisés, cite les articles retrouvés et isole les sessions.
-- Après une synthèse réussie, le summarizer produit un condensé sans Markdown que Telegram livre en un seul message, avec reprise en attente en cas d’échec.
+- Après une synthèse réussie, Telegram livre le sommaire thématique et répond aux choix successifs avec les parties du dernier rapport.
 - Homepage restitue jusqu’à 30 favoris durables et Santé calcule cycle, stockage, volumes de signaux et sources sans constante métier dans le frontend.
+- Flux restaure et sauvegarde jusqu’à cinq vues nommées ; Data Analysis restitue les décisions favorites/masquées et leur heatmap catégories × tags.
 - L’interface reste accessible sur Atlas au port `1207` sous les limites mémoire prévues.
 
 ## Configuration de référence
@@ -136,7 +138,9 @@ La synchronisation de développement vers Atlas doit exclure `.git`, `web/node_m
 |---|---|
 | `config/sources.yml` | Catalogue, clés, priorités, taxonomie globale des tags et rétention |
 | `config/ai.yaml` | Ollama, modèles, Chroma, chunking, retrievals séparés du rapport et de l’assistant, sessions |
-| `config/prompt.yaml` | Prompts et variables du chatbot, self-query, synthèse et summarizer |
-| `config/telegram.yaml` | Activation, destination et taille du résumé Telegram |
+| `config/prompt.yaml` | Prompts et variables du chatbot, self-query, plan et rédaction thématique |
+| `config/sentences.yaml` | Stock optionnel de phrases choisies aléatoirement pour conclure le sommaire Telegram |
+| `config/views.yaml` | Jusqu’à cinq raccourcis persistants de filtrage et d’affichage de Flux |
+| `config/telegram.yaml` | Activation, destinations et taille du résumé Telegram |
 | `docker-compose.yml` | Images, volumes, ports, secrets injectés et mémoire |
 | `systemd/argos-collect.*` | Déclenchement à 10 h, 14 h et 18 h |

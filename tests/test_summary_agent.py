@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import ANY, Mock, patch
+from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
@@ -16,7 +16,10 @@ os.environ.setdefault(
 from feeds.collection import _refresh_ai_outputs  # noqa: E402
 from feeds.database import connect, initialize  # noqa: E402
 from rag.summary_agent import (  # noqa: E402
+    PlannedSection,
+    SummaryPlan,
     _build_graph,
+    _normalize_plan,
     _new_p1_signals,
     _draft_node,
     _references_markdown,
@@ -91,9 +94,23 @@ class SummaryAgentTest(unittest.TestCase):
         self.assertEqual([], result["signals"])
         self.assertNotIn("document", result)
 
-    def test_report_is_written_with_one_global_retrieval_and_one_generation(
-        self,
-    ) -> None:
+    def test_plan_numbers_main_sections_then_reserves_five_for_other(self) -> None:
+        signals = [{"id": str(index), "title": f"Signal {index}"} for index in range(4)]
+        plan = SummaryPlan(
+            sections=[
+                PlannedSection(
+                    title="Sujet A", overview="Résumé A", signal_ids=["0", "1"]
+                ),
+                PlannedSection(title="Sujet B", overview="Résumé B", signal_ids=["2"]),
+            ]
+        )
+
+        sections = _normalize_plan(plan, signals)
+
+        self.assertEqual([1, 2, 5], [section["number"] for section in sections])
+        self.assertEqual(["3"], sections[-1]["signal_ids"])
+
+    def test_each_planned_part_has_its_own_retrieval_and_generation(self) -> None:
         signals = [
             {
                 "id": "1",
@@ -117,7 +134,25 @@ class SummaryAgentTest(unittest.TestCase):
             patch("rag.summary_agent.chat_model", return_value=model),
             patch("rag.summary_agent.load_prompt", return_value="instruction"),
         ):
-            result = _draft_node({"signals": signals})
+            result = _draft_node(
+                {
+                    "signals": signals,
+                    "sections": [
+                        {
+                            "number": 1,
+                            "title": "Points clés",
+                            "overview": "Deux signaux.",
+                            "signal_ids": ["1", "2"],
+                        },
+                        {
+                            "number": 5,
+                            "title": "Autre",
+                            "overview": "Aucun autre signal.",
+                            "signal_ids": [],
+                        },
+                    ],
+                }
+            )
         retrieve.assert_called_once()
         model.invoke.assert_called_once_with("instruction")
         self.assertEqual("Points clés", result["drafts"][0]["title"])
@@ -127,15 +162,12 @@ class SummaryAgentTest(unittest.TestCase):
         with (
             patch("rag.indexing.sync_index", side_effect=RuntimeError("Nyx down")),
             patch("rag.summary_agent.generate_summary") as generate,
-            patch("rag.summarizer.generate_telegram_summary") as summarize,
             patch("system.telegram.send_summary_if_pending") as send,
         ):
-            _index, summary, summarizer, telegram = _refresh_ai_outputs(errors)
+            _index, summary, telegram = _refresh_ai_outputs(errors)
         self.assertIsNone(summary)
-        self.assertIsNone(summarizer)
         self.assertIsNone(telegram)
         generate.assert_not_called()
-        summarize.assert_not_called()
         send.assert_not_called()
         self.assertIn("Index RAG: Nyx down", errors)
 
@@ -144,41 +176,14 @@ class SummaryAgentTest(unittest.TestCase):
             patch("rag.indexing.sync_index", return_value={"indexed": 2}),
             patch("rag.summary_agent.generate_summary", return_value=expected),
             patch(
-                "rag.summarizer.generate_telegram_summary",
-                return_value={"generated": True, "chars": 3000},
-            ) as summarize,
-            patch("system.telegram.telegram_message_limit", return_value=3900),
-            patch(
                 "system.telegram.send_summary_if_pending",
                 return_value={"sent": True, "messages": 1},
             ) as send,
         ):
-            _index, summary, summarizer, telegram = _refresh_ai_outputs([])
+            _index, summary, telegram = _refresh_ai_outputs([])
         self.assertEqual(expected, summary)
-        self.assertTrue(summarizer["generated"])
         self.assertTrue(telegram["sent"])
-        summarize.assert_called_once_with(3900, progress=ANY)
         send.assert_called_once()
-
-    def test_summarizer_failure_prevents_raw_report_delivery(self) -> None:
-        errors = []
-        with (
-            patch("rag.indexing.sync_index", return_value={"indexed": 2}),
-            patch(
-                "rag.summary_agent.generate_summary", return_value={"generated": True}
-            ),
-            patch(
-                "rag.summarizer.generate_telegram_summary",
-                side_effect=RuntimeError("résumé trop long"),
-            ),
-            patch("system.telegram.send_summary_if_pending") as send,
-        ):
-            _index, _summary, summarizer, telegram = _refresh_ai_outputs(errors)
-
-        self.assertIsNone(summarizer)
-        self.assertIsNone(telegram)
-        send.assert_not_called()
-        self.assertIn("Summarizer: résumé trop long", errors)
 
 
 if __name__ == "__main__":

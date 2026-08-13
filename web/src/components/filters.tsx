@@ -105,21 +105,25 @@ export function TagFilter({
   selected,
   onAdd,
   onRemove,
+  placeholder = "Tous les tags",
+  ariaLabel = "Filtrer par tag",
 }: {
   options: string[];
   selected: string[];
   onAdd: (value: string) => void;
   onRemove: (value: string) => void;
+  placeholder?: string;
+  ariaLabel?: string;
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
       <select
         value=""
         onChange={(event) => event.target.value && onAdd(event.target.value)}
-        aria-label="Filtrer par tag"
+        aria-label={ariaLabel}
         className="h-9 min-w-48 rounded-md border border-border bg-background px-3 text-sm"
       >
-        <option value="">Tous les tags</option>
+        <option value="">{placeholder}</option>
         {options
           .filter((tag) => !selected.includes(tag))
           .map((tag) => (

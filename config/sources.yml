@@ -9,13 +9,13 @@ categories:
     - recherche
     - Newsletter
     name: Hugging Face — Daily Papers
-    priorité: 2
+    priorité: 1
     url: https://papers.takara.ai/api/feed
   - keys:
     - recherche
     - Deep Learning
     name: Papers with Code — Latest
-    priorité: 2
+    priorité: 1
     url: https://paperswithcode.com/feeds/latest
   - keys:
     - recherche
@@ -136,7 +136,7 @@ categories:
     - recherche
     - LLM
     name: Microsoft Research
-    priorité: 2
+    priorité: 1
     url: https://www.microsoft.com/en-us/research/feed/
   - keys:
     - LLM
@@ -217,7 +217,7 @@ categories:
     - Orchestration
     - RAG
     name: LangChain Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/langchain-ai/langchain/releases.atom
   - keys:
     - IA Agentique
@@ -265,7 +265,7 @@ categories:
     - IA Agentique
     - RAG
     name: LlamaIndex Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/run-llama/llama_index/releases.atom
   - keys:
     - Orchestration
@@ -395,7 +395,7 @@ categories:
   - keys:
     - RAG
     name: pgvector Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/pgvector/pgvector/releases.atom
   - keys:
     - recherche
@@ -428,34 +428,34 @@ categories:
     - Ops
     - HPC
     name: vLLM Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/vllm-project/vllm/releases.atom
   - keys:
     - LLM
     - Ops
     - HPC
     name: SGLang Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/sgl-project/sglang/releases.atom
   - keys:
     - LLM
     - Ops
     - HPC
     name: llm-d Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/llm-d/llm-d/releases.atom
   - keys:
     - LLM
     - Orchestration
     - Ops
     name: LiteLLM Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/BerriAI/litellm/releases.atom
   - keys:
     - LLM
     - Ops
     name: llama.cpp Releases
-    priorité: 1
+    priorité: 2
     url: https://github.com/ggml-org/llama.cpp/releases.atom
   - keys:
     - LLM
@@ -926,6 +926,10 @@ tags:
   - paper
   - benchmark
   - search
+  releases:
+  - release
+  - releases
+  - changelog
   reglementation:
   - AI policy
   - regulation

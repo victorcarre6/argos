@@ -43,10 +43,8 @@ class BackendStructureTest(unittest.TestCase):
         _pipeline_progress("fetch", "Flux 1", 1, 2)
         self.assertEqual(22.5, collection_state["progress"]["percent"])
         _pipeline_progress("summary", "Rédaction", 1, 2)
-        self.assertEqual(83.5, collection_state["progress"]["percent"])
+        self.assertEqual(86.0, collection_state["progress"]["percent"])
         self.assertEqual("Rédaction", collection_state["progress"]["label"])
-        _pipeline_progress("summarizer", "Condensation", 1, 2)
-        self.assertEqual(94.5, collection_state["progress"]["percent"])
 
     def test_app_health_exposes_safe_telegram_status(self) -> None:
         health = self.client.get("/api/health/app").get_json()
@@ -174,11 +172,13 @@ class BackendStructureTest(unittest.TestCase):
             )
         config = {
             "collection": {"max_age_days": 14},
-            "tags": {"Agents": ["agent"]},
+            "tags": {"Agents": ["agent"], "llm": ["large language model"]},
             "categories": [
                 {
                     "name": "Current category",
-                    "sources": [{"name": "Score Source", "priorité": 1}],
+                    "sources": [
+                        {"name": "Score Source", "priorité": 1, "keys": ["LLM"]}
+                    ],
                 }
             ],
         }
@@ -187,8 +187,8 @@ class BackendStructureTest(unittest.TestCase):
             row = connection.execute(
                 "SELECT score,tags,category FROM articles WHERE id='score-test'"
             ).fetchone()
-        self.assertEqual(60, row["score"])
-        self.assertEqual("Agents", row["tags"])
+        self.assertEqual(70, row["score"])
+        self.assertEqual("Agents,llm", row["tags"])
         self.assertEqual("Current category", row["category"])
 
     def test_all_public_routes_are_registered(self) -> None:
@@ -207,6 +207,7 @@ class BackendStructureTest(unittest.TestCase):
             "/api/articles/favorites",
             "/api/articles/<article_id>/view",
             "/api/articles/<article_id>/feedback",
+            "/api/articles/feedback",
             "/api/stats",
             "/api/refresh",
             "/api/collection/runs",

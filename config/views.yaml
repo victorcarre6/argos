@@ -1,0 +1,19 @@
+views:
+  - name: "Favoris"
+    categories:
+      - "Laboratoires et providers"
+      - "Aggrégateurs"
+    priorities: [1, 2]
+    sources: []
+    tags:
+      - inference
+      - llm
+      - optimisation
+      - rag
+      - agents
+      - evaluation
+      - deploiement
+    search: ""
+    sort: published
+    favorites_only: false
+    compact: false

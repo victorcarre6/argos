@@ -2,7 +2,7 @@
 
 ## 12/08 01:05 — Audit complet de la documentation
 
-Les dix fichiers Markdown du projet ont été réalignés sur l’application courante : trois domaines backend actifs, taxonomie de 18 tags `snake_case`, progression de pipeline, synthèse avec fallback, livraison Telegram exclusive, favoris durables, cartes Santé dynamiques, libellés simplifiés et sous-onglet YAML. Les références à Digest, Viz, clusters et heatmap sont conservées uniquement dans les entrées explicitement historiques.
+À cette date, les dix fichiers Markdown du projet avaient été réalignés sur l’application alors courante : trois domaines backend actifs, taxonomie de 18 tags `snake_case`, progression de pipeline, synthèse avec fallback, livraison Telegram exclusive, favoris durables, cartes Santé dynamiques, libellés simplifiés et sous-onglet YAML. Les évolutions ultérieures sont consignées dans les entrées datées suivantes.
 
 ## 12/08 01:20 — Sélection P1 bornée
 
@@ -365,3 +365,62 @@ Réorganisation des sources autour de familles fonctionnelles et ajout initial d
 
 - Ajout d’un bouton maison gris à droite de l’icône Argos dans l’en-tête.
 - Le lien ouvre `http://192.168.1.50:3141` dans un nouvel onglet avec un libellé accessible.
+
+## 12/08 12:10 — Consolidation documentaire et setups
+
+- Synthèse de la livraison courante dans les documents de référence : rapports datés en heure de Paris, summarizer mono-message, retrievals séparés, chat multi-tour, sources AAP et navigation commune Pantone.
+- Ajout au README de six setups explicites : Docker local, développement frontend/backend, Atlas, Ollama/RAG, Telegram et timer systemd.
+- Alignement de la documentation d’état sur `ai.yaml` : découpage 800/180 à partir de 400 caractères, retrieval rapport 10/4 et assistant 30/10.
+- Conservation dans l’ELN des anciennes valeurs comme décisions historiques ; seuls les documents décrivant le runtime actuel sont corrigés.
+
+## 13/08 16:18 — Destinataires Telegram multiples
+
+- Remplacement de la destination unique par une boucle sur les entrées nommées de `telegram.chat_ids`, avec conservation de `chat_id` comme format historique de repli.
+- Écriture de l’empreinte de livraison uniquement après la réussite de tous les envois ; un échec conserve donc le rapport en attente.
+- Ajout du nombre de destinataires au statut non sensible et d’un test couvrant deux utilisateurs.
+
+## 13/08 16:47 — Rapports thématiques et bot interactif
+
+- Réintroduction du plan structuré avec un à quatre axes principaux numérotés sans trou et une partie fixe `5. Autre`; le fallback par catégorie conserve chaque signal une seule fois.
+- Rédaction et sauvegarde atomique de chaque partie TXT, puis fusion directe dans le rapport Markdown principal affiché par Argos.
+- Suppression du second agent de condensation : le sommaire Telegram court réutilise les titres et aperçus du plan.
+- Ajout du long polling Telegram avec offset persistant, liste blanche des conversations, commandes `/start`, `/help` et réponses successives `1` à `5` visant toujours le dernier rapport.
+- Ajout de `/download`, qui transmet via `sendDocument` le fichier Markdown complet du dernier rapport sans conversion.
+- Ajout de `config/sentences.yaml` avec sélection déterministe par empreinte du rapport, puis instruction fixe de réponse à la fin du sommaire Telegram.
+- Remplacement demandé de cette sélection déterministe par un index aléatoire calculé avec `randint` à chaque nouvelle génération ; l’artefact sauvegardé stabilise ensuite la phrase pour les reprises.
+- Le stock de phrases devient optionnel : son absence ou une liste inexploitable supprime seulement la phrase variable et conserve l’instruction Telegram fixe.
+
+## 13/08 — Sélection rapide des filtres Flux
+
+- Transformation des libellés catégorie, source et tags des cartes en contrôles accessibles.
+- Un clic choisit la catégorie ou ajoute sans doublon la source ou le tag aux multisélections existantes.
+- Suppression de l’affichage redondant des `keys` dans les cartes et passage des vrais `tags` au style vert cliquable unique.
+- Ajout de `releases` à la taxonomie et affectation forcée lors du fetch et du rescoring pour toute source nommée `Releases`.
+- Généralisation de l’héritage source → signal : traduction centralisée des `keys` vers les tags contrôlés, fusion avec les tags explicites et textuels, et validation qu’aucune source ne reste sans tag effectif.
+
+## 13/08 — Vues persistantes de Flux
+
+- Passage des catégories et priorités en multisélection et utilisation d’une union pour les ensembles de catégories, priorités, sources et tags.
+- Ajout de `config/views.yaml`, des routes de lecture/création atomique, d’une limite stricte à cinq noms uniques et de pilules vertes sous les filtres.
+- `+ New` capture tous les réglages courants ; le preset `Favoris` initialise les deux familles, P1/P2 et les sept tags demandés.
+- Ajout à gauche du sélecteur de densité d’un bouton secondaire `Reset` avec flèche circulaire, qui restaure tous les réglages initiaux sans supprimer les vues sauvegardées.
+
+## 13/08 — Data Analysis des décisions éditoriales
+
+- Homepage allégée : retrait du texte explicatif et réemploi des cartes compactes de Flux pour les favoris.
+- Ajout entre Assistants et Santé d’une vue alimentée par tous les snapshots de `signal_feedback`, avec compteurs, navigation Tous/Favoris/Ignorés, cartes parcourables et classement simple des tags évalués.
+- Remplacement du classement initial par quatre analyses : acceptation par tag, acceptation par source, histogramme des scores favoris/masqués et performance P1/P2/P3 ; ajout en tête des volumes favoris/masqués et du ratio historique sur stock courant.
+- Ajout avant la liste d’une heatmap pleine largeur catégories × tags : cellules grises sans décision, interpolation rouge-jaune-vert selon le taux d’acceptation et détail des volumes au survol.
+- Déplacement de la légende graduée ApexCharts à droite, en disposition verticale conforme à la référence visuelle demandée.
+
+## 13/08 18:54 — Consolidation documentaire avant livraison
+
+- Alignement des documents de référence sur la taxonomie de 19 tags, leur héritage depuis les sources et les vues Flux persistantes.
+- Documentation du pipeline de rapports thématiques, du bot Telegram multi-destinataires interactif et de ses commandes `/help` et `/download`.
+- Description de Homepage compacte et de Data Analysis, notamment la heatmap ApexCharts sombre catégories × tags avec légende verticale à droite.
+- Clarification de la remise à zéro des données : l’API doit être arrêtée avant toute suppression manuelle de SQLite et de ses artefacts.
+
+## 13/08 — Échelle continue de la heatmap
+
+- Masquage de la légende ApexCharts discrète qui listait les intervalles de couleurs.
+- Ajout à droite de la heatmap d’une barre verticale continue rouge → jaune → vert, avec uniquement les bornes `0 %` et `100 %`.

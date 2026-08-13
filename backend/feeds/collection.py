@@ -26,12 +26,27 @@ from system.settings import (
 from system.state import collection_state, state_lock
 
 ProgressCallback = Callable[[str, str, int, int], None]
+SOURCE_KEY_TAGS = {
+    "recherche": "recherche",
+    "LLM": "llm",
+    "IA Agentique": "agents",
+    "Orchestration": "deploiement",
+    "RAG": "rag",
+    "Cloud": "cloud",
+    "HPC": "hpc",
+    "Deep Learning": "entrainement",
+    "Ops": "deploiement",
+    "Monitoring": "observabilite",
+    "Politique": "reglementation",
+    "Newsletter": "recherche",
+    "Cybersécurité": "securite",
+    "Appels à projets": "financement",
+}
 PIPELINE_RANGES = {
     "fetch": (0, 45),
     "storage": (45, 55),
     "embedding": (55, 75),
-    "summary": (75, 92),
-    "summarizer": (92, 97),
+    "summary": (75, 97),
     "telegram": (97, 100),
 }
 
@@ -104,6 +119,7 @@ def _score(
     collected_at: str,
     max_age_days: int,
     now: datetime | None = None,
+    forced_tags: list[str] | None = None,
 ) -> tuple[int, list[str]]:
     text = f"{title} {summary}".casefold()
     tags = [
@@ -114,6 +130,9 @@ def _score(
             for alias in aliases
         )
     ]
+    for tag in forced_tags or []:
+        if tag in taxonomy and tag not in tags:
+            tags.append(tag)
     relevance = min(60, 10 + len(tags) * 10)
     priority_points = {1: 25, 2: 12, 3: 0}.get(priority, 0)
     reference = published_at or collected_at
@@ -129,6 +148,22 @@ def _score(
     except (AttributeError, ValueError):
         pass
     return min(100, relevance + priority_points + freshness), tags
+
+
+def _source_tags(source: dict[str, Any]) -> list[str]:
+    tags = [
+        tag for tag in source.get("tags", []) if isinstance(tag, str) and tag.strip()
+    ]
+    for key in source.get("keys", []):
+        tag = SOURCE_KEY_TAGS.get(key)
+        if tag and tag not in tags:
+            tags.append(tag)
+    if (
+        re.search(r"\breleases\b", str(source.get("name", "")), re.I)
+        and "releases" not in tags
+    ):
+        tags.append("releases")
+    return tags
 
 
 def fetch_source(
@@ -200,6 +235,7 @@ def fetch_source(
                 published_at,
                 now,
                 max_age_days,
+                forced_tags=_source_tags(source),
             )
             articles.append(
                 {
@@ -338,6 +374,7 @@ def _refresh_scores(config: dict[str, Any], now: datetime | None = None) -> int:
         source["name"]: {
             "category": category["name"],
             "priority": int(source.get("priorité", 3)),
+            "tags": _source_tags(source),
         }
         for category in config.get("categories", [])
         for source in category.get("sources", [])
@@ -362,6 +399,7 @@ def _refresh_scores(config: dict[str, Any], now: datetime | None = None) -> int:
                 row["collected_at"],
                 max_age_days,
                 now,
+                metadata.get("tags", []),
             )
             updates.append((score, ",".join(tags), metadata["category"], row["id"]))
         connection.executemany(
@@ -407,7 +445,6 @@ def _refresh_ai_outputs(
     dict[str, Any],
     dict[str, Any] | None,
     dict[str, Any] | None,
-    dict[str, Any] | None,
 ]:
     from rag.indexing import index_status, sync_index
 
@@ -415,7 +452,7 @@ def _refresh_ai_outputs(
         index_result = sync_index(progress=progress)
     except Exception as exc:
         errors.append(f"Index RAG: {exc}")
-        return index_status(), None, None, None
+        return index_status(), None, None
 
     try:
         from rag.summary_agent import generate_summary
@@ -423,31 +460,15 @@ def _refresh_ai_outputs(
         summary_result = generate_summary(progress=progress)
     except Exception as exc:
         errors.append(f"AI Summary: {exc}")
-        return index_result, None, None, None
-
-    try:
-        from rag.summarizer import generate_telegram_summary
-        from system.telegram import telegram_message_limit
-
-        summarizer_result = generate_telegram_summary(
-            telegram_message_limit(), progress=progress
-        )
-    except Exception as exc:
-        errors.append(f"Summarizer: {exc}")
-        return index_result, summary_result, None, None
+        return index_result, None, None
 
     try:
         from system.telegram import send_summary_if_pending
 
-        return (
-            index_result,
-            summary_result,
-            summarizer_result,
-            send_summary_if_pending(progress=progress),
-        )
+        return index_result, summary_result, send_summary_if_pending(progress=progress)
     except Exception as exc:
         errors.append(f"Telegram: {exc}")
-        return index_result, summary_result, summarizer_result, None
+        return index_result, summary_result, None
 
 
 def collect(trigger: str = "manual") -> None:
@@ -522,9 +543,7 @@ def collect(trigger: str = "manual") -> None:
         pruned = _prune_articles(config)
         _pipeline_progress("storage", "Recalcul des scores et tags", 3, 3)
         rescored = _refresh_scores(config)
-        index_result, summary_result, summarizer_result, telegram_result = (
-            _refresh_ai_outputs(errors)
-        )
+        index_result, summary_result, telegram_result = _refresh_ai_outputs(errors)
         result = {
             "sources": len(tasks),
             "failed_sources": collection_state["progress"]["failed"],
@@ -535,7 +554,6 @@ def collect(trigger: str = "manual") -> None:
             "rescored": rescored,
             "rag_index": index_result,
             "summary": summary_result,
-            "summarizer": summarizer_result,
             "telegram": telegram_result,
             "errors": errors,
         }

@@ -1,5 +1,7 @@
-# Utilisé après la condensation du dernier rapport en un message texte.
+# Sommaire interactif et réponses thématiques du bot Telegram.
 enabled: false
 bot_token_env: "TELEGRAM_BOT_TOKEN"
-chat_id: ""
+chat_ids:
+  user1: ""
+  user2: ""
 max_message_chars: 3900
